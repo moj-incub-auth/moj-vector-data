@@ -131,7 +131,14 @@ def main():
         milvus_client.close()
 
     elif args.command == "search":
-        milvus_client = MilvusKnowledgeBase(args.host, args.port, args.collection_name)
+        milvus_client = MilvusKnowledgeBase(
+            args.host,
+            args.port,
+            args.collection_name,
+            args.embedding_model,
+            args.embedding_dim,
+            args.max_batch_size,
+        )
         milvus_client.connect()
         search_results = milvus_client.search_components(args.search_query)
         for idx, result in enumerate(search_results):

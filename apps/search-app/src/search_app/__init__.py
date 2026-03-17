@@ -37,14 +37,15 @@ async def health_handler(**kwargs) -> Dict[str, Any]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # knowledge_base.connect()
+    knowledge_base.connect()
     yield
-    # knowledge_base.close()
+    knowledge_base.close()
 
 
 app = FastAPI(
     title="MOJ Design System Search", description="Vector Search API", lifespan=lifespan
 )
+
 app.add_api_route(
     "/health",
     health(

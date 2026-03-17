@@ -50,5 +50,8 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
+# Expose the API port
+EXPOSE 8080
+
 # Run the FastAPI application by default
-CMD ["fastapi", "run", "--host", "0.0.0.0", "apps/search-app/src/search_app"]
+CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8080", "apps/search-app/src/search_app"]

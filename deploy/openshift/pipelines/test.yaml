@@ -1,16 +1,20 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: buildah-search-app-pipeline
+  name: ingest-app-pipeline
 spec:
   workspaces:
     - name: shared-data
   params:
+    - name: GIT_URL
+      type: string
+      default: "https://github.com/moj-incub-auth/moj-vector-data.git"
+    - name: GIT_BRANCH
+      type: string
+      default: "main"
     - name: IMAGE_REFERENCE
-      default: "image-registry.openshift-image-registry.svc:5000/moj-vector-data/search-app:latest"
       type: string
-    - name: BUILD_NUMBER
-      type: string
+      default: "image-registry.openshift-image-registry.svc:5000/moj-vector-data/ingest-app:latest"
   tasks:
     - name: fetch-source
       taskRef:
@@ -27,10 +31,9 @@ spec:
           workspace: shared-data
       params:
         - name: URL
-          value: "https://github.com/moj-incub-auth/moj-vector-data.git"
+          value: $(params.GIT_URL)
         - name: revision
-          value: "main"
-
+          value: $(params.GIT_BRANCH)
     - name: build-image
       runAfter: ["fetch-source"]
       taskRef:
@@ -47,13 +50,14 @@ spec:
           workspace: shared-data
       params:
         - name: DOCKERFILE
-          value: "Containerfile.search-app"
+          value: "./Containerfile.ingest-app"
+        - name: VERBOSE
+          value: "true"
         - name: IMAGE
           value: $(params.IMAGE_REFERENCE)
         - name: TLSVERIFY
           value: "false"
         - name: BUILD_EXTRA_ARGS
           value: >-
-            --build-arg BUILD_NUMBER=$params.BUILD_NUMBER)
             --build-arg GIT_REF=$(tasks.fetch-source.results.COMMIT)
-            --build-arg GIT_BRANCH=main          
+            --build-arg GIT_BRANCH=$(params.GIT_BRANCH)    

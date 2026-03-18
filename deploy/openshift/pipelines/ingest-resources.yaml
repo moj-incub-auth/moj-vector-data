@@ -90,6 +90,7 @@ spec:
     - name: ingest-resources
       taskRef:
         name: moj-ingest
+      runAfter: ["fetch-moj-frontend", "fetch-hmrc-frontend", "fetch-dwp-design"]
       workspaces:
         - name: source
           workspace: shared-data

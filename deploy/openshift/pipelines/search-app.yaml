@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: ingest-app-pipeline
+  name: search-app-pipeline
 spec:
   workspaces:
     - name: shared-data

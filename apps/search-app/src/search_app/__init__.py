@@ -83,5 +83,5 @@ class SearchResponse(BaseModel):
 
 @app.post("/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
-    results = knowledge_base.component_search(request.message)
+    results = knowledge_base.search_components(request.message)
     return SearchResponse(message="Search successful", components=results)

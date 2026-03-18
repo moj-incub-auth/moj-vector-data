@@ -1,10 +1,10 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  generateName: ingest-app-piperun-
+  generateName: build-ingest-app-piperun-
 spec:
   pipelineRef:
-    name: ingest-app-pipeline
+    name: build-ingest-app-pipeline
   serviceAccountName: pipeline 
   workspaces:
     - name: shared-data

@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: search-app
+  name: moj-search-app
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: search-app
+      app: moj-search-app
   template:
     metadata:
       labels:
-        app: search-app
+        app: moj-search-app
     spec:
       containers:
       - name: api
@@ -20,15 +20,7 @@ spec:
         - containerPort: 8080
         env:
         - name: MILVUS_HOST
-          value: "my-release-milvus.milvus.svc.cluster.local"
-        - name: MILVUS_PORT
-          value: "19530"
-        - name: MILVUS_COLLECTION
-          value: "knowledge_base"
-        - name: EMBEDDING_API_URL
-          value: "http://qwen3-embedding-predictor.vllm-serving.svc.cluster.local"
-        - name: EMBEDDING_API_MODEL
-          value: "qwen3-embedding"
+          value: "moj-milvus.moj-vector-data.svc.cluster.local"
         livenessProbe:
           httpGet:
             path: /health
@@ -45,25 +37,23 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: moj-search-api
-  namespace: milvus
+  name: moj-search-app
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
+  - port: 8080
     targetPort: 8080
   selector:
-    app: moj-search-api
+    app: moj-search-app
 ---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: moj-search-api
-  namespace: milvus
+  name: moj-search-app
 spec:
   to:
     kind: Service
-    name: moj-search-api
+    name: moj-search-app
     weight: 100
   port:
     targetPort: 8080

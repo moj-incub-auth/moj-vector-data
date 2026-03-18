@@ -1,10 +1,10 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  generateName: search-app-piperun-
+  generateName: build-search-app-piperun-
 spec:
   pipelineRef:
-    name: search-app-pipeline
+    name: build-search-app-pipeline
   serviceAccountName: pipeline 
   workspaces:
     - name: shared-data

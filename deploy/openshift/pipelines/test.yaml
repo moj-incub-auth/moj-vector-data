@@ -49,8 +49,6 @@ spec:
         - name: source
           workspace: shared-data
       params:
-        - name: DOCKERFILE
-          value: "./Containerfile.ingest-app"
         - name: VERBOSE
           value: "true"
         - name: IMAGE

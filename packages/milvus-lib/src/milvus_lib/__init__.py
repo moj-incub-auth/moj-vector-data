@@ -173,6 +173,15 @@ class MilvusKnowledgeBase:
         ]
 
     def __functions(self) -> List[Function]:
+        params = {  # Provider-specific configuration (highest priority)
+            "provider": "openai",  # Embedding model provider
+            "model_name": self.embedding_model,  # Embedding model
+            "dim": self.embedding_dim,
+            # Optional parameters:
+            # "credential": "apikey_dev",               # Optional: Credential label specified in milvus.yaml
+            # "user": "user123"                         # Optional: identifier for API tracking
+        }
+        logger.warning(f"Embedding model parameters: {params}")
         return [
             Function(
                 name="content_embedding",  # Unique identifier for this embedding function
@@ -181,14 +190,7 @@ class MilvusKnowledgeBase:
                 output_field_names=[
                     "content_embedding"
                 ],  # Vector field to store embeddings
-                params={  # Provider-specific configuration (highest priority)
-                    "provider": "openai",  # Embedding model provider
-                    "model_name": self.embedding_model,  # Embedding model
-                    # "dim": self.embedding_dim,
-                    # Optional parameters:
-                    # "credential": "apikey_dev",               # Optional: Credential label specified in milvus.yaml
-                    # "user": "user123"                         # Optional: identifier for API tracking
-                },
+                params=params,
             ),
         ]
 

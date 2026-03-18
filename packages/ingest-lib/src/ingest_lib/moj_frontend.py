@@ -19,7 +19,7 @@ from .protocols import ExtractComponents
 logger = logging.getLogger(__name__)
 
 
-class MojFrontendInjestor(ExtractComponents):
+class MojFrontendIngestor(ExtractComponents):
     project_root: Path
     components_dir: Path
 

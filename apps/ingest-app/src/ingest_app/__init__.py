@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 import configargparse
-from ingest_lib.moj_frontend import MojFrontendInjestor
+from ingest_lib.moj_frontend import MojFrontendIngestor
 from milvus_lib import MilvusKnowledgeBase
 
 logging.basicConfig()
@@ -113,7 +113,7 @@ def main():
         milvus_client.connect(drop_existing=not args.keep)
 
         for component_ingest in [
-            MojFrontendInjestor(ingest_dir / "moj-frontend"),
+            MojFrontendIngestor(ingest_dir / "moj-frontend"),
         ]:
             if not component_ingest.project_exists():
                 logger.warning(f"Project not found: {component_ingest.project_root}")

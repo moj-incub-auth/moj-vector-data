@@ -1,0 +1,59 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: buildah-ingest-app-pipeline
+spec:
+  workspaces:
+    - name: shared-data
+  params:
+    - name: IMAGE_REFERENCE
+      default: "image-registry.openshift-image-registry.svc:5000/moj-vector-data/ingest-app:latest"
+      type: string
+    - name: BUILD_NUMBER
+      type: string
+  tasks:
+    - name: fetch-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: name
+            value: git-clone
+          - name: kind
+            value: task 
+          - name: namespace
+            value: openshift-pipelines # Default location for built-in tasks
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: URL
+          value: "https://github.com/moj-incub-auth/moj-vector-data.git"
+        - name: revision
+          value: "main"
+
+    - name: build-image
+      runAfter: ["fetch-source"]
+      taskRef:
+        resolver: cluster
+        params:
+          - name: name
+            value: buildah
+          - name: kind
+            value: task
+          - name: namespace
+            value: openshift-pipelines
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: DOCKERFILE
+          value: "Containerfile.ingest-app"
+        - name: IMAGE
+          value: $(params.IMAGE_REFERENCE)
+        - name: TLSVERIFY
+          value: "false"
+        - name: BUILD_EXTRA_ARGS
+          value: >-
+            --build-arg BUILD_NUMBER=$params.BUILD_NUMBER)
+            --build-arg GIT_REF=$(tasks.fetch-source.results.COMMIT)
+            --build-arg GIT_BRANCH=main          

@@ -49,8 +49,8 @@ spec:
         - name: source
           workspace: shared-data
       params:
-        - name: VERBOSE
-          value: "true"
+        - name: DOCKERFILE
+          value: "./Containerfile.ingest-app"
         - name: IMAGE
           value: $(params.IMAGE_REFERENCE)
         - name: TLSVERIFY

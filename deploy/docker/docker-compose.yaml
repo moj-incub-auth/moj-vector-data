@@ -37,8 +37,8 @@ services:
       retries: 3
   text-embeddings-inference:
     container_name: tei
-    #image: ghcr.io/huggingface/text-embeddings-inference:latest
-    image: localhost/text-embeddings-inference:latest
+    image: ghcr.io/huggingface/text-embeddings-inference:latest
+    #image: localhost/text-embeddings-inference:latest
     ports:
       - "18080:18080"
     environment:

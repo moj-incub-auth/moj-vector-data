@@ -184,7 +184,7 @@ class MilvusKnowledgeBase:
                 params={  # Provider-specific configuration (highest priority)
                     "provider": "openai",  # Embedding model provider
                     "model_name": self.embedding_model,  # Embedding model
-                    "dim": self.embedding_dim,
+                    # "dim": self.embedding_dim,
                     # Optional parameters:
                     # "credential": "apikey_dev",               # Optional: Credential label specified in milvus.yaml
                     # "user": "user123"                         # Optional: identifier for API tracking

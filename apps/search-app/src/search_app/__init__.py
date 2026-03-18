@@ -17,7 +17,14 @@ def create_knowledge_base() -> MilvusKnowledgeBase:
     host = os.getenv("MILVUS_HOST", "localhost")
     port = int(os.getenv("MILVUS_PORT", "19530"))
     collection_name = os.getenv("MILVUS_COLLECTION", "knowledge_base")
-    return MilvusKnowledgeBase(host, port, collection_name)
+    embedding_model = os.getenv(
+        "MILVUS_EMBEDDING_MODEL", "nomic-ai/nomic-embed-text-v1.5"
+    )
+    embedding_dim = int(os.getenv("MILVUS_EMBEDDING_DIM", "1024"))
+    max_batch_size = int(os.getenv("MILVUS_MAX_BATCH_SIZE", "2"))
+    return MilvusKnowledgeBase(
+        host, port, collection_name, embedding_model, embedding_dim, max_batch_size
+    )
 
 
 knowledge_base = create_knowledge_base()

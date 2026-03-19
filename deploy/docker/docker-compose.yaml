@@ -10,7 +10,7 @@ services:
       - ETCD_QUOTA_BACKEND_BYTES=4294967296
       - ETCD_SNAPSHOT_COUNT=50000
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd:Z
     command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
     healthcheck:
       test: ["CMD", "etcdctl", "endpoint", "health"]
@@ -28,7 +28,7 @@ services:
       - "9001:9001"
       - "9000:9000"
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data:Z
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -37,8 +37,8 @@ services:
       retries: 3
   text-embeddings-inference:
     container_name: tei
-    image: ghcr.io/huggingface/text-embeddings-inference:latest
-    #image: localhost/text-embeddings-inference:latest
+    #image: ghcr.io/huggingface/text-embeddings-igit nference:latest
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-ipex-latest
     ports:
       - "18080:18080"
     environment:
@@ -46,8 +46,9 @@ services:
       - USE_FLASH_ATTENTION=True
       - HOSTNAME=0.0.0.0
       - PORT=18080
+      - TRUST_REMOTE_CODE=True
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/tei:/data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/tei:/data:Z
     command: --model-id ${MILVUS_EMBEDDING_MODEL:-nomic-ai/nomic-embed-text-v1.5}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18080/health"]
@@ -69,7 +70,7 @@ services:
       - source: user.yaml
         target: /milvus/configs/user.yaml
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus:Z
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
       interval: 30s
@@ -79,13 +80,13 @@ services:
     ports:
       - "19530:19530"
       - "9091:9091"
-    depends_on:
-      etcd:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      text-embeddings-inference:
-        condition: service_healthy
+    # depends_on:
+    #   etcd:
+    #     condition: service_healthy
+    #   minio:
+    #     condition: service_healthy
+    #   text-embeddings-inference:
+    #     condition: service_healthy
 
 configs:
   user.yaml:

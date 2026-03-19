@@ -26,6 +26,9 @@ spec:
       default: "main"
     - name: MILVUS_HOST
       type: string
+    - name: DROP_COLLECTIONS
+      type: string
+      default: "False"
   tasks:
     - name: fetch-moj-frontend
       taskRef:
@@ -97,3 +100,5 @@ spec:
       params:
         - name: MILVUS_HOST
           value: $(params.MILVUS_HOST)
+        - name: DROP_COLLECTIONS
+          value: $(params.DROP_COLLECTIONS)

@@ -24,8 +24,11 @@ spec:
     - default: /source
       name: INGEST_DIR
       type: string
+    - default: False
+      name: DROP_COLLECTIONS
+      type: string
   steps:
-    - name: ubuntu-example
+    - name: ingest-app
       image: "image-registry.openshift-image-registry.svc:5000/moj-vector-data/ingest-app:latest"
       env:
         - name: MILVUS_HOST
@@ -42,6 +45,8 @@ spec:
           value: $(params.MILVUS_EMBEDDING_MODEL)
         - name: INGEST_DIR
           value: $(params.INGEST_DIR)
+        - name: DROP_COLLECTIONS
+          value: $(params.DROP_COLLECTIONS)
   workspaces:
     - name: source
       description: Project source code

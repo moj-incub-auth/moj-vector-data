@@ -156,7 +156,7 @@ class MojFrontendComponentEntry:
     def to_component_entry(self) -> ComponentEntry:
         title = self.frontmatter["title"]
         description = self.extract_description()
-        # status = self.frontmatter["status"]
+        status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
         has_research = self.extract_has_research()
         accessibility = self.extract_accessibility()
@@ -174,6 +174,7 @@ Content: {self.full_content}
             description=description,
             url=url,
             parent=parent,
+            status=status,
             accessibility=accessibility,
             has_research=has_research,
             created_at=created_at,

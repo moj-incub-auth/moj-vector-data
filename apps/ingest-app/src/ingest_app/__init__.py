@@ -80,7 +80,11 @@ def main():
     )
 
     ingest_parser.add_argument(
-        "--keep", action="store_true", help="Keep existing collection"
+        "--drop",
+        action="store_true",
+        default=False,
+        env_var="DROP_COLLECTIONS",
+        help="Drop existing collections",
     )
 
     search_parser = subparsers.add_parser(
@@ -110,7 +114,7 @@ def main():
             args.embedding_dim,
             args.max_batch_size,
         )
-        milvus_client.connect(drop_existing=not args.keep)
+        milvus_client.connect(drop_existing=args.drop)
 
         for component_ingest in [
             MojFrontendIngestor(ingest_dir / "moj-frontend"),
@@ -147,8 +151,11 @@ def main():
             print(f"  Description: {result.description[:100]}...")
             print(f"  URL: {result.url})")
             print(f"  Parent: {result.parent}")
+            print(f"  Status: {result.status}")
             print(f"  Accessibility: {result.accessibility}")
             print(f"  Has Research: {result.has_research}")
+            print(f"  Created At: {result.created_at}")
+            print(f"  Updated At: {result.updated_at}")
             print(f"  Views: {result.views:.4f})")
         milvus_client.close()
 

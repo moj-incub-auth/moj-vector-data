@@ -12,6 +12,9 @@ spec:
     - name: RESOURCE_GIT_BRANCH
       type: string
       default: "main"
+    - name: RESOURCE_SUBDIRECTORY
+      type: string
+      default: "moj-frontend"
     - name: MILVUS_HOST
       type: string
     - name: DROP_COLLECTIONS
@@ -37,7 +40,7 @@ spec:
         - name: revision
           value: $(params.RESOURCE_GIT_BRANCH)
         - name: SUBDIRECTORY
-          value: "moj-frontend"
+          value: $(params.RESOURCE_SUBDIRECTORY)
     - name: ingest-resources
       taskRef:
         name: moj-ingest

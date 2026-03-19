@@ -1,15 +1,15 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: ingest-moj-frontend-pipeline
+  name: ingest-content-pipeline
 spec:
   workspaces:
     - name: shared-data
   params:
-    - name: MOJ_FRONTEND_GIT_URL
+    - name: RESOURCE_GIT_URL
       type: string
       default: "https://github.com/ministryofjustice/moj-frontend.git"
-    - name: MOJ_FRONTEND_GIT_BRANCH
+    - name: RESOURCE_GIT_BRANCH
       type: string
       default: "main"
     - name: MILVUS_HOST
@@ -33,9 +33,9 @@ spec:
           workspace: shared-data
       params:
         - name: URL
-          value: $(params.MOJ_FRONTEND_GIT_URL)
+          value: $(params.RESOURCE_GIT_URL)
         - name: revision
-          value: $(params.MOJ_FRONTEND_GIT_BRANCH)
+          value: $(params.RESOURCE_GIT_BRANCH)
         - name: SUBDIRECTORY
           value: "moj-frontend"
     - name: ingest-resources

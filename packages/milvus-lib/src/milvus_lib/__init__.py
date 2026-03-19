@@ -234,7 +234,6 @@ class MilvusKnowledgeBase:
             self.collection.create_index(
                 field_name="content_embedding", index_params=self.__index()
             )
-        self.collection.is_empty
         self.collection.load()
         logger.info(f"Connected to Milvus collection: {self.collection_name}")
 

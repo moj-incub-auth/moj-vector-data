@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterable, List
 
 from pydantic import BaseModel
 
@@ -25,6 +25,7 @@ class SearchComponent(BaseModel):
     description: str
     parent: str
     accessibility: str
+    status: str
     created_at: str
     updated_at: str
     has_research: bool
@@ -42,12 +43,16 @@ class ComponentEntry(BaseModel):
     url: str
     parent: str
     accessibility: str
+    status: str
     has_research: bool
     created_at: str
     updated_at: str
     views: int
     content: str
     full_content: str
+
+    def upsert_dump(self) -> Dict[str, Any]:
+        return self.model_dump(exclude={"views"})
 
 
 class MilvusKnowledgeBase:
@@ -92,17 +97,11 @@ class MilvusKnowledgeBase:
     def __fields(self) -> List[FieldSchema]:
         return [
             FieldSchema(
-                name="id",
-                dtype=DataType.INT64,
-                is_primary=True,
-                auto_id=True,
-                description="Primary key",
-            ),
-            FieldSchema(
                 name="component_id",
                 dtype=DataType.VARCHAR,
+                is_primary=True,
                 max_length=256,
-                description="Unique component identifier",
+                description="Unique component identifier, Primary key",
             ),
             FieldSchema(
                 name="title",
@@ -129,6 +128,12 @@ class MilvusKnowledgeBase:
                 description="Parent design system",
             ),
             FieldSchema(
+                name="status",
+                dtype=DataType.VARCHAR,
+                max_length=256,
+                description="Component status",
+            ),
+            FieldSchema(
                 name="accessibility",
                 dtype=DataType.VARCHAR,
                 max_length=64,
@@ -151,7 +156,9 @@ class MilvusKnowledgeBase:
                 max_length=128,
                 description="Update timestamp",
             ),
-            FieldSchema(name="views", dtype=DataType.INT16, description="views"),
+            FieldSchema(
+                name="views", dtype=DataType.INT64, description="views", default_value=0
+            ),
             FieldSchema(
                 name="content",
                 dtype=DataType.VARCHAR,
@@ -181,7 +188,6 @@ class MilvusKnowledgeBase:
             # "credential": "apikey_dev",               # Optional: Credential label specified in milvus.yaml
             # "user": "user123"                         # Optional: identifier for API tracking
         }
-        logger.warning(f"Embedding model parameters: {params}")
         return [
             Function(
                 name="content_embedding",  # Unique identifier for this embedding function
@@ -201,7 +207,7 @@ class MilvusKnowledgeBase:
         connections.connect(alias="default", host=self.host, port=self.port)
 
         if drop_existing and utility.has_collection(self.collection_name):
-            logger.info(f"Dropping existing collection: {self.collection_name}")
+            logger.warning(f"Dropping existing collection: {self.collection_name}")
             utility.drop_collection(self.collection_name)
 
         # Get collection and load it
@@ -223,12 +229,12 @@ class MilvusKnowledgeBase:
         connections.disconnect("default")
         logger.info(f"Disconnected from Milvus collection: {self.collection_name}")
 
-    def add_components(self, components: Iterator[ComponentEntry]):
+    def add_components(self, components: Iterable[ComponentEntry]):
 
         for batch in itertools.batched(
-            map(lambda x: x.model_dump(), components), self.max_batch_size
+            map(lambda x: x.upsert_dump(), components), self.max_batch_size
         ):
-            self.collection.insert([*batch])
+            self.collection.upsert([*batch])
         self.collection.flush()
 
     def search_components(
@@ -249,6 +255,7 @@ class MilvusKnowledgeBase:
                 "url",
                 "parent",
                 "accessibility",
+                "status",
                 "has_research",
                 "created_at",
                 "updated_at",
@@ -266,6 +273,7 @@ class MilvusKnowledgeBase:
                     description=hit.entity.get("description"),
                     url=hit.entity.get("url"),
                     parent=hit.entity.get("parent"),
+                    status=hit.entity.get("status"),
                     accessibility=hit.entity.get("accessibility"),
                     has_research=hit.entity.get("has_research"),
                     created_at=hit.entity.get("created_at"),

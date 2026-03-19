@@ -80,7 +80,11 @@ def main():
     )
 
     ingest_parser.add_argument(
-        "--drop", action="store_true", help="Drop existing collection"
+        "--drop",
+        action="store_true",
+        default=False,
+        env_var="DROP_COLLECTIONS",
+        help="Drop existing collections",
     )
 
     search_parser = subparsers.add_parser(

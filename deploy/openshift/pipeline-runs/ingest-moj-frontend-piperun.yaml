@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  generateName: ingest-content-piperun-
+  generateName: ingest-moj-frontend-piperun-
 spec:
   pipelineRef:
     name: ingest-content-pipeline
@@ -14,6 +14,8 @@ spec:
       value: "main"
     - name: MILVUS_HOST
       value: "moj-milvus.moj-vector-data.svc.cluster.local"
+    - name: RESOURCE_SUBDIRECTORY
+      value: "moj-frontend"
   workspaces:
     - name: shared-data
       volumeClaimTemplate:

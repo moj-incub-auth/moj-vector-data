@@ -18,7 +18,7 @@ spec:
       type: string
       default: "False"
   tasks:
-    - name: fetch-moj-frontend
+    - name: fetch-content-repo
       taskRef:
         resolver: cluster
         params:
@@ -41,7 +41,7 @@ spec:
     - name: ingest-resources
       taskRef:
         name: moj-ingest
-      runAfter: ["fetch-moj-frontend"]
+      runAfter: ["fetch-content-repo"]
       workspaces:
         - name: source
           workspace: shared-data

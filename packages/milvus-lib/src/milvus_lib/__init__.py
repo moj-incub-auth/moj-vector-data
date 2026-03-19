@@ -254,7 +254,7 @@ class MilvusKnowledgeBase:
         if self.collection is None:
             return False
         try:
-            if self.collection.has_index("content_embedding"):
+            if self.collection.has_index(index_name="content_embedding"):
                 return True
         except Exception as e:
             logger.error(f"Error checking health: {e}")

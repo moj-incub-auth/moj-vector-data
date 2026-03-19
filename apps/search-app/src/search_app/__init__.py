@@ -14,6 +14,12 @@ logger = logging.getLogger(f"uvicorn.{__name__}")
 
 
 def create_knowledge_base() -> MilvusKnowledgeBase:
+    """Create a MilvusKnowledgeBase from environment variables.
+
+    Returns:
+        A configured MilvusKnowledgeBase instance. Connection is established
+        separately via lifespan.
+    """
     host = os.getenv("MILVUS_HOST", "localhost")
     port = int(os.getenv("MILVUS_PORT", "19530"))
     collection_name = os.getenv("MILVUS_COLLECTION", "knowledge_base")
@@ -31,10 +37,12 @@ knowledge_base = create_knowledge_base()
 
 
 def knowledge_base_status() -> bool:
+    """Check if the Milvus knowledge base is healthy and ready for search."""
     return knowledge_base.is_healthy()
 
 
 async def health_handler(**kwargs) -> Dict[str, Any]:
+    """Format health check results for the /health endpoint response."""
     is_success = all(kwargs.values())
     return {
         "status": "success" if is_success else "failure",
@@ -44,6 +52,7 @@ async def health_handler(**kwargs) -> Dict[str, Any]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Manage knowledge base connection for the lifetime of the FastAPI app."""
     knowledge_base.connect()
     yield
     knowledge_base.close()
@@ -68,20 +77,28 @@ Instrumentator(
 
 @app.get("/")
 def read_root():
+    """Root endpoint returning a simple greeting."""
     return {"Hello": "World"}
 
 
 # Based on https://gist.github.com/Aron-v1/f6e58554acf9ef0f328ac93d74dcb9ca
 class SearchRequest(BaseModel):
+    """Request body for the /search endpoint."""
+
     message: str
 
 
 class SearchResponse(BaseModel):
+    """Response body for the /search endpoint."""
+
     message: str
     components: list[SearchComponent]
 
 
 @app.post("/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
+    """Perform semantic search over design system components."""
+    logger.info(f"Searching for: {request.message}")
     results = knowledge_base.search_components(request.message)
+    logger.info(f"Search results: {results}")
     return SearchResponse(message="Search successful", components=results)

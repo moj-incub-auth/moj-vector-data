@@ -9,6 +9,8 @@ spec:
   params:
     - name: MILVUS_HOST
       value: "moj-milvus.moj-vector-data.svc.cluster.local"
+    - name: DROP_COLLECTIONS
+      value: "True"
   workspaces:
     - name: shared-data
       volumeClaimTemplate:

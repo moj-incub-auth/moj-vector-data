@@ -11,6 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    """CLI entry point for ingesting data into Milvus or searching the knowledge base.
+
+    Supports two subcommands:
+        ingest - Ingest design system components from moj-frontend into Milvus
+        search - Run a semantic search query and print results
+    """
     main_parser = configargparse.ArgParser(
         description="Interact with the Milvus Knowledge Base"
     )

@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 
 
 class SearchComponent(BaseModel):
+    """A design system component as returned from search results.
+
+    Represents the core metadata of a component stored in the knowledge base,
+    excluding the relevance score. Used as the base for search result models.
+    """
+
     title: str
     url: str
     description: str
@@ -33,10 +39,22 @@ class SearchComponent(BaseModel):
 
 
 class ScoredSearchComponent(SearchComponent):
+    """A search result combining component metadata with its relevance score.
+
+    Extends SearchComponent with the similarity score returned by vector search,
+    indicating how closely the component matches the query.
+    """
+
     score: float
 
 
 class ComponentEntry(BaseModel):
+    """A component ready for ingestion into the Milvus knowledge base.
+
+    Contains all metadata and content fields required for indexing. The views
+    field is excluded when upserting to allow Milvus to manage counters.
+    """
+
     component_id: str
     title: str
     description: str
@@ -52,10 +70,22 @@ class ComponentEntry(BaseModel):
     full_content: str
 
     def upsert_dump(self) -> Dict[str, Any]:
+        """Serialize the component for Milvus upsert, excluding the views field.
+
+        Returns:
+            A dictionary suitable for Collection.upsert(), with views omitted
+            so Milvus can manage view counts separately.
+        """
         return self.model_dump(exclude={"views"})
 
 
 class MilvusKnowledgeBase:
+    """A Milvus-backed vector knowledge base for design system components.
+
+    Manages connection, schema, indexing, and semantic search over component
+    documentation. Uses OpenAI-compatible embeddings via the configured model.
+    """
+
     host: str
     port: int
     collection_name: str
@@ -73,6 +103,16 @@ class MilvusKnowledgeBase:
         embedding_dim: int = 1024,
         max_batch_size: int = 2,
     ):
+        """Initialize the knowledge base client.
+
+        Args:
+            host: Milvus server host.
+            port: Milvus server port.
+            collection_name: Name of the vector collection.
+            embedding_model: Model identifier for text embeddings.
+            embedding_dim: Dimension of embedding vectors.
+            max_batch_size: Maximum components per upsert batch.
+        """
         self.host = host
         self.port = port
         self.collection_name = collection_name
@@ -81,6 +121,7 @@ class MilvusKnowledgeBase:
         self.max_batch_size = max_batch_size
 
     def __schema(self) -> CollectionSchema:
+        """Build the collection schema with fields and embedding function."""
         return CollectionSchema(
             fields=self.__fields(),
             functions=self.__functions(),
@@ -88,6 +129,7 @@ class MilvusKnowledgeBase:
         )
 
     def __index(self) -> Dict[str, Any]:
+        """Build the IVF_FLAT index parameters for cosine similarity."""
         return {
             "metric_type": "COSINE",  # Use cosine similarity
             "index_type": "IVF_FLAT",
@@ -95,6 +137,7 @@ class MilvusKnowledgeBase:
         }
 
     def __fields(self) -> List[FieldSchema]:
+        """Define the schema fields for the collection."""
         return [
             FieldSchema(
                 name="component_id",
@@ -180,6 +223,7 @@ class MilvusKnowledgeBase:
         ]
 
     def __functions(self) -> List[Function]:
+        """Define the embedding function for content to vector conversion."""
         params = {  # Provider-specific configuration (highest priority)
             "provider": "openai",  # Embedding model provider
             "model_name": self.embedding_model,  # Embedding model
@@ -201,9 +245,36 @@ class MilvusKnowledgeBase:
         ]
 
     def is_healthy(self) -> bool:
-        return self.collection is not None
+        """Check if the collection is loaded and has a valid embedding index.
+
+        Returns:
+            True if the collection is ready for search, False otherwise.
+            Attempts to reload the collection if the index check fails.
+        """
+        if self.collection is None:
+            return False
+        try:
+            if self.collection.has_index(index_name="content_embedding"):
+                return True
+        except Exception as e:
+            logger.error(f"Error checking health: {e}")
+            if utility.has_collection(self.collection_name):
+                old_collection = self.collection
+                self.collection = Collection(self.collection_name)
+                self.collection.load()
+                try:
+                    old_collection.release()
+                except Exception as e:
+                    logger.error(f"Error releasing old collection: {e}")
+            return False
 
     def connect(self, drop_existing: bool = False):
+        """Connect to Milvus and load or create the collection.
+
+        Args:
+            drop_existing: If True, drop the existing collection before
+                creating a new one. Use with caution as it erases all data.
+        """
         connections.connect(alias="default", host=self.host, port=self.port)
 
         if drop_existing and utility.has_collection(self.collection_name):
@@ -219,18 +290,25 @@ class MilvusKnowledgeBase:
             self.collection.create_index(
                 field_name="content_embedding", index_params=self.__index()
             )
-
         self.collection.load()
         logger.info(f"Connected to Milvus collection: {self.collection_name}")
 
     def close(self):
+        """Release the collection and disconnect from Milvus."""
         self.collection.release()
         self.collection = None
         connections.disconnect("default")
         logger.info(f"Disconnected from Milvus collection: {self.collection_name}")
 
     def add_components(self, components: Iterable[ComponentEntry]):
+        """Insert or update components in the knowledge base.
 
+        Components are batched according to max_batch_size and upserted.
+        Embeddings are computed automatically by Milvus.
+
+        Args:
+            components: Iterable of ComponentEntry instances to add.
+        """
         for batch in itertools.batched(
             map(lambda x: x.upsert_dump(), components), self.max_batch_size
         ):
@@ -240,6 +318,16 @@ class MilvusKnowledgeBase:
     def search_components(
         self, query: List[float] | str, limit: int = 10
     ) -> List[ScoredSearchComponent]:
+        """Perform semantic search over component content.
+
+        Args:
+            query: Search query as a text string (embedding computed automatically)
+                or a pre-computed embedding vector.
+            limit: Maximum number of results to return.
+
+        Returns:
+            List of ScoredSearchComponent results ordered by relevance.
+        """
         # Search parameters
         search_params = {"metric_type": "COSINE", "params": {"nprobe": 10}}
 

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_health import health
 from milvus_lib import MilvusKnowledgeBase, SearchComponent
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -60,6 +61,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="MOJ Design System Search", description="Vector Search API", lifespan=lifespan
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.add_api_route(

@@ -4,7 +4,7 @@ metadata:
   generateName: ingest-content-piperun-
 spec:
   pipelineRef:
-    name: ingest-resources-pipeline
+    name: ingest-content-pipeline
   serviceAccountName: pipeline 
   params:
     # the URL of the GIT repo containing the source data to ingest

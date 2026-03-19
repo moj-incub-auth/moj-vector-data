@@ -201,7 +201,22 @@ class MilvusKnowledgeBase:
         ]
 
     def is_healthy(self) -> bool:
-        return self.collection is not None
+        if self.collection is None:
+            return False
+        try:
+            if self.collection.has_index("content_embedding"):
+                return True
+        except Exception as e:
+            logger.error(f"Error checking health: {e}")
+            if utility.has_collection(self.collection_name):
+                old_collection = self.collection
+                self.collection = Collection(self.collection_name)
+                self.collection.load()
+                try:
+                    old_collection.release()
+                except Exception as e:
+                    logger.error(f"Error releasing old collection: {e}")
+            return False
 
     def connect(self, drop_existing: bool = False):
         connections.connect(alias="default", host=self.host, port=self.port)
@@ -219,7 +234,7 @@ class MilvusKnowledgeBase:
             self.collection.create_index(
                 field_name="content_embedding", index_params=self.__index()
             )
-
+        self.collection.is_empty
         self.collection.load()
         logger.info(f"Connected to Milvus collection: {self.collection_name}")
 

@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ingest-resources-moj-frontend-pipeline
+spec:
+  workspaces:
+    - name: shared-data
+  params:
+    - name: MOJ_FRONTEND_GIT_URL
+      type: string
+      default: "https://github.com/ministryofjustice/moj-frontend.git"
+    - name: MOJ_FRONTEND_GIT_BRANCH
+      type: string
+      default: "main"
+    - name: MILVUS_HOST
+      type: string
+    - name: DROP_COLLECTIONS
+      type: string
+      default: "False"
+  tasks:
+    - name: fetch-moj-frontend
+      taskRef:
+        resolver: cluster
+        params:
+          - name: name
+            value: git-clone
+          - name: kind
+            value: task 
+          - name: namespace
+            value: openshift-pipelines # Default location for built-in tasks
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: URL
+          value: $(params.MOJ_FRONTEND_GIT_URL)
+        - name: revision
+          value: $(params.MOJ_FRONTEND_GIT_BRANCH)
+        - name: SUBDIRECTORY
+          value: "moj-frontend"
+    - name: ingest-resources
+      taskRef:
+        name: moj-ingest
+      runAfter: ["fetch-moj-frontend"]
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: MILVUS_HOST
+          value: $(params.MILVUS_HOST)
+        - name: DROP_COLLECTIONS
+          value: $(params.DROP_COLLECTIONS)

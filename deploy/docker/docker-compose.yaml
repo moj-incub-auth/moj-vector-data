@@ -80,13 +80,13 @@ services:
     ports:
       - "19530:19530"
       - "9091:9091"
-    # depends_on:
-    #   etcd:
-    #     condition: service_healthy
-    #   minio:
-    #     condition: service_healthy
-    #   text-embeddings-inference:
-    #     condition: service_healthy
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      text-embeddings-inference:
+        condition: service_healthy
 
 configs:
   user.yaml:

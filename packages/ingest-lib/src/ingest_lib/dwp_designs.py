@@ -175,6 +175,7 @@ class DWPComponentEntry:
         """Convert DWPComponentEntry to ComponentEntry for Milvus storage."""
         title = self.frontmatter["title"]
         description = self.extract_description()
+        status = "unkown"
         created_at, updated_at = self.extract_dates()
         has_research = self.extract_has_research()
         accessibility = self.extract_accessibility()
@@ -196,6 +197,7 @@ Content: {self.full_content}
             description=description,
             url=url,
             parent=parent,
+            status=status,
             accessibility=accessibility,
             has_research=has_research,
             created_at=created_at,

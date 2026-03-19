@@ -4,17 +4,19 @@ kind: Deployment
 metadata:
   name: moj-search-app
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: moj-search-app
   template:
     metadata:
+      annotations:
+        "instrumentation.opentelemetry.io/inject-python": "true"
       labels:
         app: moj-search-app
     spec:
       containers:
-      - name: api
+      - name: moj-search-app
         image: 'image-registry.openshift-image-registry.svc:5000/moj-vector-data/search-app:latest'
         ports:
         - containerPort: 8080

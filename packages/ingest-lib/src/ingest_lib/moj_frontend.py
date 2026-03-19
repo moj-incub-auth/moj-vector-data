@@ -20,14 +20,27 @@ logger = logging.getLogger(__name__)
 
 
 class MojFrontendIngestor(ExtractComponents):
+    """Extracts design system components from a moj-frontend project.
+
+    Walks the docs/components directory, parses YAML frontmatter and markdown
+    content from each component's index.md and related .md files, and yields
+    ComponentEntry instances suitable for the Milvus knowledge base.
+    """
+
     project_root: Path
     components_dir: Path
 
     def __init__(self, project_root: Path):
+        """Initialize the ingestor with the moj-frontend project root.
+
+        Args:
+            project_root: Path to the moj-frontend repository root.
+        """
         self.project_root = project_root
         self.components_dir = self.project_root / "docs" / "components"
 
     def __walk_components(self) -> Iterator[MojFrontendComponentEntry]:
+        """Walk component directories and yield parsed MojFrontendComponentEntry objects."""
 
         metadata_re = re.compile(r"^---\s*\n(.*?)---", re.MULTILINE | re.DOTALL)
         for component_path in self.components_dir.iterdir():
@@ -74,23 +87,33 @@ class MojFrontendIngestor(ExtractComponents):
             )
 
     def project_exists(self) -> bool:
+        """Return True if the project root directory exists."""
         return self.project_root.exists()
 
     def project_root(self) -> Path:
+        """Return the path to the project root directory."""
         return self.project_root
 
     def component_count(self) -> int:
+        """Return the number of components (subdirs with index.md) in the project."""
         if self.components_dir.exists() and self.components_dir.is_dir():
             return sum(1 for _ in self.components_dir.glob("*/index.md"))
         return 0
 
     def extract_components(self) -> Iterator[ComponentEntry]:
+        """Yield ComponentEntry instances from all components in the project."""
         for component in self.__walk_components():
             yield component.to_component_entry()
 
 
 @dataclass
 class MojFrontendComponentEntry:
+    """A parsed component from moj-frontend with frontmatter and full content.
+
+    Holds raw data from the filesystem and provides extraction methods to
+    derive structured fields (description, dates, accessibility) for ComponentEntry.
+    """
+
     overview_re: ClassVar[Pattern] = re.compile(
         r"## Overview\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
@@ -100,11 +123,17 @@ class MojFrontendComponentEntry:
     full_content: str
 
     def extract_has_research(self) -> bool:
+        """Return True if the component content mentions research."""
         return (
             MojFrontendComponentEntry.research_re.search(self.full_content) is not None
         )
 
     def extract_description(self) -> str:
+        """Extract description from frontmatter lede or Overview section.
+
+        Falls back to the first paragraph of the Overview section, or a default
+        string if neither is available.
+        """
         if "lede" in self.frontmatter:
             return self.frontmatter["lede"]
         overview_match = MojFrontendComponentEntry.overview_re.search(self.full_content)
@@ -154,9 +183,10 @@ class MojFrontendComponentEntry:
         return now, now
 
     def to_component_entry(self) -> ComponentEntry:
+        """Convert this parsed component into a ComponentEntry for Milvus ingestion."""
         title = self.frontmatter["title"]
         description = self.extract_description()
-        # status = self.frontmatter["status"]
+        status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
         has_research = self.extract_has_research()
         accessibility = self.extract_accessibility()
@@ -174,6 +204,7 @@ Content: {self.full_content}
             description=description,
             url=url,
             parent=parent,
+            status=status,
             accessibility=accessibility,
             has_research=has_research,
             created_at=created_at,

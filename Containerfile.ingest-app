@@ -45,7 +45,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Use the non-root user to run our application
 USER nonroot
 
-RUN git config --global --add safe.directory /source/design-system
+RUN git config --global --add safe.directory /source/*
 
 # Use `/app` as the working directory
 WORKDIR /app

@@ -15,6 +15,11 @@ spec:
     - name: RESOURCE_SUBDIRECTORY
       type: string
       default: "moj-frontend"
+    # zero(0) = full clone
+    # one(1) = swallow clone
+    - name: GIT_CLONE_DEPTH  
+      type: string
+      default: 0
     - name: MILVUS_HOST
       type: string
     - name: DROP_COLLECTIONS
@@ -39,6 +44,8 @@ spec:
           value: $(params.RESOURCE_GIT_URL)
         - name: revision
           value: $(params.RESOURCE_GIT_BRANCH)
+        - name: DEPTH
+          value: $(params.GIT_CLONE_DEPTH)
         - name: SUBDIRECTORY
           value: $(params.RESOURCE_SUBDIRECTORY)
     - name: ingest-resources

@@ -113,6 +113,7 @@ def main():
         ingest_dir = args.ingest_dir
         if not ingest_dir.exists() or not ingest_dir.is_dir():
             raise FileNotFoundError(f"Ingest directory not found: {ingest_dir}")
+        print(ingest_dir)        
 
         milvus_client = MilvusKnowledgeBase(
             args.host,

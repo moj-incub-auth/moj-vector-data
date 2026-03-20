@@ -26,7 +26,7 @@ class DWPComponentsIngestor(ExtractComponents):
         self.project_root = project_root
         self.components_dir = self.project_root / "app" / "views" / "components"
 
-    def __walk_components(self) -> Iterator["DWPComponentEntry"]:
+    def __walk_components(self) -> Iterator[DWPComponentEntry]:
         """Walk through component directories and yield DWPComponentEntry objects."""
 
         gitfiledates = GitFileDates(self.components_dir)
@@ -193,7 +193,7 @@ class DWPComponentEntry:
         """Convert DWPComponentEntry to ComponentEntry for Milvus storage."""
         title = self.frontmatter["title"]
         description = self.extract_description()
-        status = "unkown"
+        status = "N/A"
         created_at, updated_at = self.extract_dates()
         has_research = self.extract_has_research()
         accessibility = self.extract_accessibility()

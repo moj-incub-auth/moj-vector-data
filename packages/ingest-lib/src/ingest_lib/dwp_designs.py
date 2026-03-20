@@ -11,9 +11,9 @@ from typing import ClassVar, Dict, Iterator
 # Local imports
 from milvus_lib import ComponentEntry
 
-from .protocols import ExtractComponents
-
 from ingest_lib.file_dates import GitFileDates
+
+from .protocols import ExtractComponents
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,10 @@ class DWPComponentsIngestor(ExtractComponents):
 
         gitfiledates = GitFileDates(self.components_dir)
         datesdict = gitfiledates.get_file_dates("README.md.njk")
-        print("****************************")
-        print(datesdict)
-        print("****************************")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("****************************")
+            logger.debug(datesdict)
+            logger.debug("****************************")
 
         for component_path in self.components_dir.iterdir():
             if not component_path.is_dir():
@@ -41,24 +42,26 @@ class DWPComponentsIngestor(ExtractComponents):
 
             readme_file = component_path / "README.md.njk"
             if not readme_file.exists():
-                logger.warning(f"README.md.njk not found for component: {component_path}")
+                logger.warning(
+                    f"README.md.njk not found for component: {component_path}"
+                )
                 continue
 
             readme_content = readme_file.read_text()
 
             # Extract first line for description
-            first_line = readme_content.split('\n')[0].strip()
+            first_line = readme_content.split("\n")[0].strip()
 
             # Create title from folder name: replace dashes with spaces
             # Example: "key-details-bar" becomes "Key Details Bar"
-            component_title = component_path.name.replace('-', ' ').title()
+            component_title = component_path.name.replace("-", " ").title()
 
-            print("File: ", readme_file)
-            foldername = str(component_path).rsplit('/', 1)[-1]
-            key = f"{foldername}/{"README.md.njk"}"
-            print("Path: ", foldername)   
-            print("Last update at: ", datesdict[key])
- 
+            logger.debug("File: ", readme_file)
+            foldername = str(component_path).rsplit("/", 1)[-1]
+            key = f"{foldername}/{'README.md.njk'}"
+            logger.debug("Path: ", foldername)
+            logger.debug("Last update at: ", datesdict[key])
+
             # 1. Parse the string into a datetime object
             # %a: Weekday, %b: Month, %d: Day, %H:%M:%S: Time, %Y: Year, %z: UTC offset
             dt_obj = datetime.strptime(datesdict[key], "%a %b %d %H:%M:%S %Y %z")

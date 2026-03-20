@@ -4,7 +4,6 @@ from pathlib import Path
 import configargparse
 from ingest_lib.dwp_designs import DWPComponentsIngestor
 from ingest_lib.moj_frontend import MojFrontendIngestor
-
 from milvus_lib import MilvusKnowledgeBase
 
 logging.basicConfig()
@@ -113,7 +112,7 @@ def main():
         ingest_dir = args.ingest_dir
         if not ingest_dir.exists() or not ingest_dir.is_dir():
             raise FileNotFoundError(f"Ingest directory not found: {ingest_dir}")
-        print(ingest_dir)        
+        print(ingest_dir)
 
         milvus_client = MilvusKnowledgeBase(
             args.host,

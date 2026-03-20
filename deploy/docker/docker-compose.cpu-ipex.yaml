@@ -3,4 +3,4 @@ include:
 
 services:
   text-embeddings-inference:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-ipex-latest
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-ipex-latest     

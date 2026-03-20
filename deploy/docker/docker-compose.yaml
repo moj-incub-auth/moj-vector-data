@@ -38,7 +38,7 @@ services:
   text-embeddings-inference:
     container_name: tei
     image: ghcr.io/huggingface/text-embeddings-inference:latest
-    #image: localhost/text-embeddings-inference:latest
+    #image: ghcr.io/huggingface/text-embeddings-inference:cpu-ipex-latest
     ports:
       - "18080:18080"
     environment:
@@ -46,6 +46,7 @@ services:
       - USE_FLASH_ATTENTION=True
       - HOSTNAME=0.0.0.0
       - PORT=18080
+      - TRUST_REMOTE_CODE=True
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/tei:/data:Z
     command: --model-id ${MILVUS_EMBEDDING_MODEL:-nomic-ai/nomic-embed-text-v1.5}

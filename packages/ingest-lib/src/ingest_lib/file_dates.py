@@ -1,6 +1,8 @@
+import logging
 import subprocess
-from datetime import datetime
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class GitFileDates:
@@ -22,10 +24,10 @@ class GitFileDates:
                 cwd=self.repo_path,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
 
-            files = result.stdout.strip().split('\n')
+            files = result.stdout.strip().split("\n")
 
             # For each file, get the last commit date
             for filename in files:
@@ -42,7 +44,7 @@ class GitFileDates:
                     cwd=self.repo_path,
                     capture_output=True,
                     text=True,
-                    check=True
+                    check=True,
                 )
 
                 commit_date = date_result.stdout.strip()
@@ -63,14 +65,16 @@ if __name__ == "__main__":
 
     # Get all files with their dates
     all_files = git_dates.get_file_dates()
-    print("All files:")
-    for file, date in all_files.items():
-        print(f"{date} {file}")
+    logger.debug("All files:")
+    if logger.isEnabledFor(logging.DEBUG):
+        for file, date in all_files.items():
+            logger.debug(f"{date} {file}")
 
-    print("\n" + "="*80 + "\n")
+        logger.debug("\n" + "=" * 80 + "\n")
 
     # Get only README.md.njk files (equivalent to the grep in the bash script)
     readme_files = git_dates.get_file_dates(filter_pattern="README.md.njk")
-    print("README.md.njk files:")
-    for file, date in readme_files.items():
-        print(f"{date} {file}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug("README.md.njk files:")
+        for file, date in readme_files.items():
+            logger.debug(f"{date} {file}")

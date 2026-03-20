@@ -4,12 +4,16 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
+import requests
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_health import health
 from milvus_lib import MilvusKnowledgeBase, SearchComponent
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
+
+from requests.exceptions import InvalidURL
 
 logger = logging.getLogger(f"uvicorn.{__name__}")
 
@@ -100,13 +104,74 @@ class SearchResponse(BaseModel):
     """Response body for the /search endpoint."""
 
     message: str
-    components: list[SearchComponent]
+    components: list[SearchComponent] = []
 
 
 @app.post("/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
     """Perform semantic search over design system components."""
+
+    input_guardrails_fired=guardrails(request.message)
+    if input_guardrails_fired == True:
+         logger.info(f"INPUT GUARDRAILS FAILURE")
+         return SearchResponse(message="Failed Guardrails. I cannot help you with this request. Please be more specific or more polite.")
+ 
+
     logger.info(f"Searching for: {request.message}")
     results = knowledge_base.search_components(request.message)
     logger.info(f"Search results: {results}")
     return SearchResponse(message="Search successful", components=results)
+
+
+
+
+def guardrails( prompt: str) -> bool:
+    
+    guardrails_enabled = os.getenv("GUARDRAILS_ENABLED", "False")
+
+    if str(guardrails_enabled).strip().lower() == "true":
+      logger.info(f"GUARDRAILS ENABLED: {guardrails_enabled}")
+
+      guardrails_url = os.getenv("GUARDRAILS_GATEWAY", "https://guardrails-gateway-vllm-serving.apps.cluster-6ldk6.6ldk6.sandbox2187.opentlc.com/all/v1/chat/completions")
+      guardrails_api_key = os.getenv("GUARDRAILS_API_KEY", "no_api_key")
+      guardrails_model = os.getenv("GUARDRAILS_MODEL", "qwen3-14b-llm")
+      logger.debug(f"GUARDRAILS_GATEWAY: {guardrails_url}")
+      logger.debug(f"GUARDRAILS_API_KEY: {guardrails_api_key}")
+      logger.debug(f"GUARDRAILS_MODEL: {guardrails_model}")
+
+      try:       
+          # url = "https://guardrails-gateway-vllm-serving.apps.cluster-6ldk6.6ldk6.sandbox2187.opentlc.com/all/v1/chat/completions"
+          headers = {"Content-Type": "application/json", "Authorization": guardrails_api_key}      
+          payload = {
+              "model": guardrails_model,
+              "messages": [{"role": "user", "content": prompt}],
+              "temperature": 0,
+              }
+
+          response = requests.post(guardrails_url, headers=headers, json=payload)
+      except requests.exceptions.RequestException as e:
+          logger.error(f"GUARDRAILS {guardrails_url} CONNECTION or RESPONSE ERROR")
+          raise e
+
+      logger.debug("--- Guardrails Response Details ---")
+      logger.debug(f"URL: {response.url}")
+      logger.debug(f"Status: {response.status_code} ({response.reason})")   
+      logger.debug("\n--- Body ---")
+      if response.ok: 
+          logger.debug(response.json())
+      else:
+          logger.debug(f"Error occurred: {response.text}")
+
+      data = response.json()
+      detections = data.get("detections")
+    
+      if str(detections).strip().lower() != "none":
+        logger.warning("Detections found!")
+        logger.warning(data["detections"])
+        return True
+      else:
+        return False
+    
+    else:
+      logger.info(f"GUARDRAILS ENABLED: {guardrails_enabled}")      
+      return False    

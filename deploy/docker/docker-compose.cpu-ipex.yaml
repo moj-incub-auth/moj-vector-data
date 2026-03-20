@@ -2,22 +2,5 @@ include:
   - docker-compose.yaml
 
 services:
-  etcd:
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd:Z
-  minio:
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data:Z      
   text-embeddings-inference:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-ipex-latest
-    environment:
-      - HUGGINGFACE_HUB_CACHE=/data
-      - USE_FLASH_ATTENTION=True
-      - HOSTNAME=0.0.0.0
-      - PORT=18080
-      - TRUST_REMOTE_CODE=True
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/tei:/data:Z
-  standalone:
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus:Z            
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-ipex-latest     

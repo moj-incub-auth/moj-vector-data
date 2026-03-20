@@ -13,6 +13,8 @@ from milvus_lib import ComponentEntry
 
 from .protocols import ExtractComponents
 
+from ingest_lib.file_dates import GitFileDates
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +28,13 @@ class DWPComponentsIngestor(ExtractComponents):
 
     def __walk_components(self) -> Iterator["DWPComponentEntry"]:
         """Walk through component directories and yield DWPComponentEntry objects."""
+
+        gitfiledates = GitFileDates(self.components_dir)
+        datesdict = gitfiledates.get_file_dates("README.md.njk")
+        print("****************************")
+        print(datesdict)
+        print("****************************")
+
         for component_path in self.components_dir.iterdir():
             if not component_path.is_dir():
                 continue
@@ -44,9 +53,18 @@ class DWPComponentsIngestor(ExtractComponents):
             # Example: "key-details-bar" becomes "Key Details Bar"
             component_title = component_path.name.replace('-', ' ').title()
 
-            # Extract file modification time and format it
-            file_mtime = readme_file.stat().st_mtime
-            formatted_date = datetime.fromtimestamp(file_mtime).strftime("%Y-%m-%d %H:%M:%S")
+            print("File: ", readme_file)
+            foldername = str(component_path).rsplit('/', 1)[-1]
+            key = f"{foldername}/{"README.md.njk"}"
+            print("Path: ", foldername)   
+            print("Last update at: ", datesdict[key])
+ 
+            # 1. Parse the string into a datetime object
+            # %a: Weekday, %b: Month, %d: Day, %H:%M:%S: Time, %Y: Year, %z: UTC offset
+            dt_obj = datetime.strptime(datesdict[key], "%a %b %d %H:%M:%S %Y %z")
+
+            # 2. Format the object into your desired string
+            formatted_date = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
 
             # Create frontmatter dictionary
             frontmatter = {

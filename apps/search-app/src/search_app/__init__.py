@@ -132,15 +132,19 @@ def guardrails( prompt: str) -> bool:
     if str(guardrails_enabled).strip().lower() == "true":
       logger.info(f"GUARDRAILS ENABLED: {guardrails_enabled}")
 
-      guardrails_url = os.getenv("GUARDRAILS_GATEWAY", "https://guardrails-gateway-vllm-serving.apps.cluster-6ldk6.6ldk6.sandbox2187.opentlc.com/all/v1/chat/completions")
+      guardrails_url = os.getenv("GUARDRAILS_GATEWAY", "127.0.0.1:8090") #eg. guardrails-gateway.vllm-serving.svc.cluster.local:8090
+      guardrail_type = os.getenv("GUARDRAILS_TYPE", "all") #all, hype etc.
+      guardrails_context = f"{guardrails_url}/{guardrail_type}{"/v1/chat/completions"}"
+
       guardrails_api_key = os.getenv("GUARDRAILS_API_KEY", "no_api_key")
-      guardrails_model = os.getenv("GUARDRAILS_MODEL", "qwen3-14b-llm")
+      guardrails_model = os.getenv("INFERENCE_MODEL", "qwen3-14b-llm")
       logger.debug(f"GUARDRAILS_GATEWAY: {guardrails_url}")
+      logger.debug(f"GUARDRAILS_TYPE: {guardrail_type}")
+      logger.info("GUARDRAILS:"+f"{guardrails_context}")
       logger.debug(f"GUARDRAILS_API_KEY: {guardrails_api_key}")
-      logger.debug(f"GUARDRAILS_MODEL: {guardrails_model}")
+      logger.debug(f"INFERENCE_MODEL: {guardrails_model}")
 
       try:       
-          # url = "https://guardrails-gateway-vllm-serving.apps.cluster-6ldk6.6ldk6.sandbox2187.opentlc.com/all/v1/chat/completions"
           headers = {"Content-Type": "application/json", "Authorization": guardrails_api_key}      
           payload = {
               "model": guardrails_model,
@@ -148,7 +152,7 @@ def guardrails( prompt: str) -> bool:
               "temperature": 0,
               }
 
-          response = requests.post(guardrails_url, headers=headers, json=payload)
+          response = requests.post(guardrails_context, headers=headers, json=payload)
       except requests.exceptions.RequestException as e:
           logger.error(f"GUARDRAILS {guardrails_url} CONNECTION or RESPONSE ERROR")
           raise e

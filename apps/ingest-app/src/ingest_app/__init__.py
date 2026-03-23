@@ -3,6 +3,7 @@ from pathlib import Path
 
 import configargparse
 from ingest_lib.dwp_designs import DWPComponentsIngestor
+from ingest_lib.govuk_design import GovUkComponentsIngestor
 from ingest_lib.moj_frontend import MojFrontendIngestor
 from milvus_lib import MilvusKnowledgeBase
 
@@ -126,7 +127,8 @@ def main():
 
         for component_ingest in [
             MojFrontendIngestor(ingest_dir / "moj-frontend"),
-            DWPComponentsIngestor(ingest_dir / "design-system"),
+            DWPComponentsIngestor(ingest_dir / "dwp-design-system"),
+            GovUkComponentsIngestor(ingest_dir / "govuk-design-system"),
         ]:
             if not component_ingest.project_exists():
                 logger.warning(f"Project not found: {component_ingest.project_root}")
@@ -158,14 +160,14 @@ def main():
             print(f"Result #{idx} (Similarity: {result.score:.4f})")
             print(f"  Title: {result.title}")
             print(f"  Description: {result.description[:100]}...")
-            print(f"  URL: {result.url})")
+            print(f"  URL: {result.url}")
             print(f"  Parent: {result.parent}")
             print(f"  Status: {result.status}")
             print(f"  Accessibility: {result.accessibility}")
             print(f"  Has Research: {result.has_research}")
             print(f"  Created At: {result.created_at}")
             print(f"  Updated At: {result.updated_at}")
-            print(f"  Views: {result.views:.4f})")
+            print(f"  Views: {result.views:.4f}")
         milvus_client.close()
 
 

@@ -275,7 +275,9 @@ class MilvusKnowledgeBase:
             drop_existing: If True, drop the existing collection before
                 creating a new one. Use with caution as it erases all data.
         """
-        connections.connect(alias="default", host=self.host, port=self.port)
+        connections.connect(
+            alias="default", host=self.host, port=self.port, keep_alive=True
+        )
 
         if drop_existing and utility.has_collection(self.collection_name):
             logger.warning(f"Dropping existing collection: {self.collection_name}")

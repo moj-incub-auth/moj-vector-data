@@ -4,6 +4,7 @@ from pathlib import Path
 import configargparse
 from ingest_lib.dwp_designs import DWPComponentsIngestor
 from ingest_lib.govuk_design import GovUkComponentsIngestor
+from ingest_lib.hmrc_designs import HMRCComponentsIngestor
 from ingest_lib.moj_frontend import MojFrontendIngestor
 from milvus_lib import MilvusKnowledgeBase
 
@@ -129,6 +130,7 @@ def main():
             MojFrontendIngestor(ingest_dir / "moj-frontend"),
             DWPComponentsIngestor(ingest_dir / "dwp-design-system"),
             GovUkComponentsIngestor(ingest_dir / "govuk-design-system"),
+            HMRCComponentsIngestor(ingest_dir / "hmrc-design-system"),
         ]:
             if not component_ingest.project_exists():
                 logger.warning(f"Project not found: {component_ingest.project_root}")

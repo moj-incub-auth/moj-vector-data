@@ -132,15 +132,15 @@ def guardrails( prompt: str) -> bool:
     if str(guardrails_enabled).strip().lower() == "true":
       logger.info(f"GUARDRAILS ENABLED: {guardrails_enabled}")
 
-      guardrails_url = os.getenv("GUARDRAILS_GATEWAY", "127.0.0.1:8090") #eg. guardrails-gateway.vllm-serving.svc.cluster.local:8090
+      guardrails_url = os.getenv("GUARDRAILS_GATEWAY", "http://127.0.0.1:8090") #eg. guardrails-gateway.vllm-serving.svc.cluster.local:8090
       guardrail_type = os.getenv("GUARDRAILS_TYPE", "all") #all, hype etc.
       guardrails_context = f"{guardrails_url}/{guardrail_type}{"/v1/chat/completions"}"
-
       guardrails_api_key = os.getenv("GUARDRAILS_API_KEY", "no_api_key")
       guardrails_model = os.getenv("INFERENCE_MODEL", "qwen3-14b-llm")
+
       logger.debug(f"GUARDRAILS_GATEWAY: {guardrails_url}")
       logger.debug(f"GUARDRAILS_TYPE: {guardrail_type}")
-      logger.info("GUARDRAILS:"+f"{guardrails_context}")
+      logger.info("GUARDRAILS LOCATION: "+f"{guardrails_context}")
       logger.debug(f"GUARDRAILS_API_KEY: {guardrails_api_key}")
       logger.debug(f"INFERENCE_MODEL: {guardrails_model}")
 

@@ -56,3 +56,15 @@ uv run fastapi dev -e search_app:app
 ```
 
 Requires a running Milvus instance (see `MILVUS_HOST`, `MILVUS_PORT` env vars).
+
+
+## GuardRails
+
+| Env Var               | Description                                                        |
+|-----------------------|-------------------------------------------------                   |
+| `GUARDRAILS_ENABLED`  | Enable by setting to True (default False)                          |
+| `GUARDRAILS_GATEWAY`  | The service of the Gateway eg. http://guardrails-gateway.vllm-serving.svc.cluster.local:8090  |
+| `GUARDRAILS_TYPE`     | The type of guardrail for various guardrails behaviors eg. (`all`, `passthrough`, `hap`) 
+| `GUARDRAILS_API_KEY`  | The API KEY                                                        |
+| `INFERENCE_MODEL`     | Model we are hitting for inference qwen3-14b-llm                   |
+

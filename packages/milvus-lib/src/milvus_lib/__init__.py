@@ -319,7 +319,7 @@ class MilvusKnowledgeBase:
         self.collection.flush()
 
     def search_components(
-        self, query: List[float] | str, limit: int = 10
+        self, query: List[float] | str, limit: int = 10, min_score: float = 0.0
     ) -> List[ScoredSearchComponent]:
         """Perform semantic search over component content.
 
@@ -361,6 +361,8 @@ class MilvusKnowledgeBase:
         formatted_results = []
         for hits in results:
             for hit in hits:
+                if hit.score < min_score:
+                    continue
                 result = ScoredSearchComponent(
                     score=hit.score,
                     title=hit.entity.get("title"),

@@ -23,6 +23,8 @@ def main():
     print("EXAMPLE 1")
     print("========================================================")    
     file_path = Path(
+        os.getenv("TEST_FILE_URL")  
+        or 
         "/home/stkousso/Stelios/Projects/2026/0018-MoJ/customer-resources/data/nhsuk-service-manual/app/views/design-system/components/footer/index.njk"
     )
 

@@ -15,6 +15,7 @@ from pymilvus import (
     connections,
     utility,
 )
+from pymilvus.client.types import LoadState
 
 logger = logging.getLogger(__name__)
 
@@ -332,6 +333,9 @@ class MilvusKnowledgeBase:
         """
         # Search parameters
         search_params = {"metric_type": "COSINE", "params": {"nprobe": 10}}
+
+        if utility.load_state(self.collection_name) == LoadState.NotLoad:
+            self.collection.load()
 
         # Perform search
         results = self.collection.search(

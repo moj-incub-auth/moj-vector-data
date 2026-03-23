@@ -19,3 +19,9 @@ extraConfigFiles:
           openai:
             url: http://qwen3-embedding-predictor.vllm-serving.svc.cluster.local/v1/embeddings
             credential: openai_key
+standalone:
+  resources:
+    requests:
+      memory: 8Gi
+    limits:
+      memory: 12Gi

@@ -25,6 +25,8 @@ spec:
           value: "moj-milvus.moj-vector-data.svc.cluster.local"
         - name: GUARDRAILS_GATEWAY
           value: "http://guardrails-gateway.vllm-serving.svc.cluster.local:8090"
+        - name: GUARDRAILS_ENABLED
+          value: "True"
         - name: GUARDRAILS_TYPE
           value: "all"
         - name: INFERENCE_MODEL

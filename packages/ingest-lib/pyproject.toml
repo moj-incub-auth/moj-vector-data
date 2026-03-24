@@ -8,9 +8,9 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "markdownify>=1.2.2",
     "milvus-lib",
     "pyyaml>=6.0.3",
-
 ]
 
 [build-system]

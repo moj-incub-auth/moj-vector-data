@@ -180,6 +180,9 @@ class GovUkComponentEntry:
         accessibility = "N/A"
         if ExtractComponents._has_accessibility_issues(self.full_content):
             accessibility = "Accessibility issues"
+        logger.info(
+            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+        )
         parent = "GovUk Design System"
 
         # Generate URL based on component folder name

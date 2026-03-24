@@ -122,12 +122,6 @@ class MojFrontendComponentEntry:
     frontmatter: Dict[str, str]
     full_content: str
 
-    def extract_has_research(self) -> bool:
-        """Return True if the component content mentions research."""
-        return (
-            MojFrontendComponentEntry.research_re.search(self.full_content) is not None
-        )
-
     def extract_description(self) -> str:
         """Extract description from frontmatter lede or Overview section.
 
@@ -188,7 +182,7 @@ class MojFrontendComponentEntry:
         description = self.extract_description()
         status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
-        has_research = self.extract_has_research()
+        has_research = ExtractComponents._check_has_research(self.full_content)
         accessibility = self.extract_accessibility()
         parent = "MOJ Design System"
         url = f"https://design-patterns.service.justice.gov.uk/components/{self.component_path.stem}/"

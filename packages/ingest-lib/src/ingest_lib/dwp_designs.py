@@ -135,10 +135,6 @@ class DWPComponentEntry:
     frontmatter: Dict[str, str]
     full_content: str
 
-    def extract_has_research(self) -> bool:
-        """Check if the component mentions research."""
-        return DWPComponentEntry.research_re.search(self.full_content) is not None
-
     def extract_description(self) -> str:
         """Extract description from the first line or 'When to use' section."""
         # Use the first line as the primary description
@@ -198,7 +194,7 @@ class DWPComponentEntry:
         description = self.extract_description()
         status = "N/A"
         created_at, updated_at = self.extract_dates()
-        has_research = self.extract_has_research()
+        has_research = ExtractComponents._check_has_research(self.full_content)        
         accessibility = self.extract_accessibility()
         parent = "DWP Design System"
 

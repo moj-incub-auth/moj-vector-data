@@ -2,13 +2,17 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Iterator, Protocol
 import re
+import logging
 
 
 from milvus_lib import ComponentEntry
 
+logger = logging.getLogger(f"uvicorn.{__name__}")
+
+
 # Check for research headings (case-insensitive)
 research_heading_pattern = re.compile(
-    r"<h[1-6][^>]*>\s*(?:Research|Research findings)\s*</h[1-6]>", re.IGNORECASE
+    r"##\s*(?:Research|Research findings)\s*$", re.IGNORECASE | re.MULTILINE
     )
 
 
@@ -58,9 +62,8 @@ class ExtractComponents(ProjectExists, Protocol):
         Returns:
             bool: True if research criteria are met
         """
-
         has_research_heading = bool(research_heading_pattern.search(content))
-        print(f"Has Research Heading:{has_research_heading}")
+        logger.info(f"Has Research Heading: {has_research_heading}")
         if not has_research_heading:
             return False
 
@@ -71,11 +74,12 @@ class ExtractComponents(ProjectExists, Protocol):
             r"we found",
             r"testing showed",
             r"we observed",
-            r"We tested"
+            r"usability tested"
         ]
 
         for term in research_terms:
             if re.search(term, content, re.IGNORECASE):
+                logger.info(f"Also Has Research")
                 return True
 
         return False    

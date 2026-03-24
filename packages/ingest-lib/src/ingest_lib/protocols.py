@@ -6,6 +6,11 @@ import re
 
 from milvus_lib import ComponentEntry
 
+# Check for research headings (case-insensitive)
+research_heading_pattern = re.compile(
+    r"<h[1-6][^>]*>\s*(?:Research|Research findings)\s*</h[1-6]>", re.IGNORECASE
+    )
+
 
 class ProjectExists(Protocol):
     """Protocol for types that represent a project with a root directory."""
@@ -29,11 +34,12 @@ class ExtractComponents(ProjectExists, Protocol):
         """Return the number of components available in the project."""
         raise NotImplementedError
 
-    @staticmethod
+    @abstractmethod
     def extract_components(self) -> Iterator[ComponentEntry]:
         """Yield ComponentEntry instances from the project."""
         raise NotImplementedError
     
+    @staticmethod
     def _check_has_research(content: str) -> bool:
         """
         Check if the document contains research based on specific criteria.
@@ -52,10 +58,7 @@ class ExtractComponents(ProjectExists, Protocol):
         Returns:
             bool: True if research criteria are met
         """
-        # Check for research headings (case-insensitive)
-        research_heading_pattern = re.compile(
-            r"<h[1-6][^>]*>\s*(?:Research|Research findings)\s*</h[1-6]>", re.IGNORECASE
-        )
+
         has_research_heading = bool(research_heading_pattern.search(content))
         print(f"Has Research Heading:{has_research_heading}")
         if not has_research_heading:

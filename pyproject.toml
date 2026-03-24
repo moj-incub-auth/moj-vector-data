@@ -9,6 +9,7 @@ requires-python = ">=3.14"
 members = [
     "packages/milvus-lib",
     "packages/ingest-lib",
+    "packages/llm-lib",
     "apps/ingest-app",
     "apps/search-app",
 ]

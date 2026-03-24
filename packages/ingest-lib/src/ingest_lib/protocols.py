@@ -1,19 +1,13 @@
+import logging
+import re
 from abc import abstractmethod
 from pathlib import Path
-from typing import Iterator, Protocol
-import re
-import logging
-
+from re import Pattern
+from typing import ClassVar, Iterator, Protocol
 
 from milvus_lib import ComponentEntry
 
 logger = logging.getLogger(f"uvicorn.{__name__}")
-
-
-# Check for research headings (case-insensitive)
-research_heading_pattern = re.compile(
-    r"##\s*(?:Research|Research findings)\s*$", re.IGNORECASE | re.MULTILINE
-    )
 
 
 class ProjectExists(Protocol):
@@ -33,6 +27,30 @@ class ProjectExists(Protocol):
 class ExtractComponents(ProjectExists, Protocol):
     """Protocol for extractors that yield design system components from a project."""
 
+    research_available_header_re: ClassVar[Pattern] = re.compile(
+        r"#+\s*(?:Research|Research findings)", re.IGNORECASE
+    )
+    research_available_terms_re: ClassVar[Pattern] = re.compile(
+        r"research showed|users understood|we found|testing showed|we observed|usability tested|research has shown|found|has shown",
+        re.IGNORECASE,
+    )
+
+    research_needed_header_re: ClassVar[Pattern] = re.compile(
+        r"#+\s*(?:Needs more research)", re.IGNORECASE
+    )
+    research_needed_terms_re: ClassVar[Pattern] = re.compile(
+        r"we need more research|research needed|we need more evidence|needs further testing|get in touch to share research|we want to do more usability testing|if you\’ve done any user research",
+        re.IGNORECASE,
+    )
+
+    accessibility_issues_header_re: ClassVar[Pattern] = re.compile(
+        r"#+\s*(?:Accessibility issues)", re.IGNORECASE
+    )
+    accessibility_issues_terms_re: ClassVar[Pattern] = re.compile(
+        r"does not meet WCAG|known accessibility issues|users will find it difficult|assistive technology users|this fails",
+        re.IGNORECASE,
+    )
+
     @abstractmethod
     def component_count(self) -> int:
         """Return the number of components available in the project."""
@@ -42,44 +60,38 @@ class ExtractComponents(ProjectExists, Protocol):
     def extract_components(self) -> Iterator[ComponentEntry]:
         """Yield ComponentEntry instances from the project."""
         raise NotImplementedError
-    
+
     @staticmethod
-    def _check_has_research(content: str) -> bool:
-        """
-        Check if the document contains research based on specific criteria.
+    def __has_research_available(content: str) -> bool:
+        header_match = ExtractComponents.research_available_header_re.search(content)
+        body_match = ExtractComponents.research_available_terms_re.finditer(content)
+        body_count = sum(1 for _ in body_match)
+        logger.info(f"Has research available: {header_match} and {body_count}")
+        if header_match and body_count > 0:
+            return True
+        if body_count > 1:
+            return True
+        return False
 
-        Returns True if the document contains a heading "Research" OR "Research findings"
-        AND one or more of the key terms:
-        - "research showed"
-        - "users understood"
-        - "we found"
-        - "testing showed"
-        - "we observed"
+    @staticmethod
+    def __has_research_needed(content: str) -> bool:
+        header_match = ExtractComponents.research_needed_header_re.search(content)
+        body_match = ExtractComponents.research_needed_terms_re.finditer(content)
+        body_count = sum(1 for _ in body_match)
+        logger.info(f"Has research needed: {header_match} and {body_count}")
 
-        Args:
-            content: The document content to check
+        return bool(header_match) or body_count > 0
 
-        Returns:
-            bool: True if research criteria are met
-        """
-        has_research_heading = bool(research_heading_pattern.search(content))
-        logger.info(f"Has Research Heading: {has_research_heading}")
-        if not has_research_heading:
-            return False
+    @staticmethod
+    def _has_research(content: str) -> bool:
+        return ExtractComponents.__has_research_available(
+            content
+        ) or ExtractComponents.__has_research_needed(content)
 
-        # Check for key research terms (case-insensitive)
-        research_terms = [
-            r"research showed",
-            r"users understood",
-            r"we found",
-            r"testing showed",
-            r"we observed",
-            r"usability tested"
-        ]
-
-        for term in research_terms:
-            if re.search(term, content, re.IGNORECASE):
-                logger.info(f"Also Has Research")
-                return True
-
-        return False    
+    @staticmethod
+    def _has_accessibility_issues(content: str) -> bool:
+        header_match = ExtractComponents.accessibility_issues_header_re.search(content)
+        body_match = ExtractComponents.accessibility_issues_terms_re.finditer(content)
+        body_count = sum(1 for _ in body_match)
+        logger.info(f"Has accessibility issues: {header_match} and {body_count}")
+        return bool(header_match) or body_count > 0

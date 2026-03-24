@@ -144,17 +144,6 @@ class MojFrontendComponentEntry:
                     return para.strip()
         return "Component documentation"
 
-    def extract_accessibility(self) -> str:
-        """Extract accessibility level (assume AA if not specified)."""
-        # TODO: This looks wrong
-        # Look for WCAG mentions
-        if "WCAG" in self.full_content:
-            if "2.1" in self.full_content or "2.2" in self.full_content:
-                return "AA"
-
-        # Default to AA for government services
-        return "AA"
-
     def extract_dates(self) -> tuple[str, str]:
         """Extract or generate created_at and updated_at dates."""
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -182,8 +171,16 @@ class MojFrontendComponentEntry:
         description = self.extract_description()
         status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
-        has_research = ExtractComponents._check_has_research(self.full_content)
-        accessibility = self.extract_accessibility()
+        has_research = ExtractComponents._has_research(self.full_content)
+        if ExtractComponents._has_accessibility_issues(self.full_content):
+            accessibility = "Accessibility issues"
+        else:
+            accessibility = "N/A"
+
+        logger.info(
+            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+        )
+
         parent = "MOJ Design System"
         url = f"https://design-patterns.service.justice.gov.uk/components/{self.component_path.stem}/"
         content = f"""

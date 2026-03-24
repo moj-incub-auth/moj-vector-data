@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  generateName: ingest-hmrc-frontend-piperun-
+  generateName: ingest-hmrc-design-piperun-
 spec:
   pipelineRef:
     name: ingest-content-pipeline
@@ -9,7 +9,7 @@ spec:
   params:
     # the URL of the GIT repo containing the source data to ingest
     - name: RESOURCE_GIT_URL
-      value: "https://github.com/hmrc/design-system.git"
+      value: "https://github.com/moj-incub-auth/hmrc-design-system.git"
     - name: RESOURCE_GIT_BRANCH
       value: "main"
     - name: MILVUS_HOST

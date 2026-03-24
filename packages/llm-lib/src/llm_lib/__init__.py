@@ -86,7 +86,7 @@ class ComponentExtractor:
         """
         # Check for research headings (case-insensitive)
         research_heading_pattern = re.compile(
-            r"<h[1-6][^>]*>\s*(?:Research|Research findings)\s*</h[1-6]>", re.IGNORECASE
+            r"##\s*(?:Research|Research findings)\s*$", re.IGNORECASE | re.MULTILINE
         )
         has_research_heading = bool(research_heading_pattern.search(content))
         print(f"Has Research Heading:{has_research_heading}")
@@ -100,7 +100,7 @@ class ComponentExtractor:
             r"we found",
             r"testing showed",
             r"we observed",
-            r"We tested"
+            r"usability tested"
         ]
 
         for term in research_terms:
@@ -203,49 +203,58 @@ Return ONLY the JSON object, no additional text or explanation."""
 
         print (prompt)
 
-        print("------------------ RESPONSE --------------------")        
+        print("------------------ RESPONSE --------------------")
+
+        result = self.extract_from_content(
+            content=file_content,
+            component_url=component_url,
+            parent=parent,
+        )
+        
+        return result
 
 
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful assistant that extracts structured data from documentation. Always respond with valid JSON only.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.1,  # Low temperature for consistent extraction
-                max_tokens=1000,
-            )
 
-            # Extract JSON from response
-            llm_output = response.choices[0].message.content.strip()
+        # try:
+        #     response = self.client.chat.completions.create(
+        #         model=self.model,
+        #         messages=[
+        #             {
+        #                 "role": "system",
+        #                 "content": "You are a helpful assistant that extracts structured data from documentation. Always respond with valid JSON only.",
+        #             },
+        #             {"role": "user", "content": prompt},
+        #         ],
+        #         temperature=0.1,  # Low temperature for consistent extraction
+        #         max_tokens=1000,
+        #     )
 
-            # Try to find JSON in the response (in case LLM adds extra text)
-            json_match = re.search(r"\{.*\}", llm_output, re.DOTALL)
-            if json_match:
-                llm_output = json_match.group(0)
+        #     # Extract JSON from response
+        #     llm_output = response.choices[0].message.content.strip()
 
-            # Parse JSON response
-            data = json.loads(llm_output)
+        #     # Try to find JSON in the response (in case LLM adds extra text)
+        #     json_match = re.search(r"\{.*\}", llm_output, re.DOTALL)
+        #     if json_match:
+        #         llm_output = json_match.group(0)
 
-            # Override has_research with our rule-based check
-            if data.get("components") and len(data["components"]) > 0:
-                data["components"][0]["has_research"] = has_research
+        #     # Parse JSON response
+        #     data = json.loads(llm_output)
 
-            # Validate and return
-            return LLMResponse(**data)
+        #     # Override has_research with our rule-based check
+        #     if data.get("components") and len(data["components"]) > 0:
+        #         data["components"][0]["has_research"] = has_research
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
-            logger.error(f"LLM response was: {llm_output}")
-            raise ValueError(f"LLM response was not valid JSON: {e}")
+        #     # Validate and return
+        #     return LLMResponse(**data)
 
-        except Exception as e:
-            logger.error(f"Error querying LLM: {e}")
-            raise
+        # except json.JSONDecodeError as e:
+        #     logger.error(f"Failed to parse LLM response as JSON: {e}")
+        #     logger.error(f"LLM response was: {llm_output}")
+        #     raise ValueError(f"LLM response was not valid JSON: {e}")
+
+        # except Exception as e:
+        #     logger.error(f"Error querying LLM: {e}")
+        #     raise
 
     def extract_from_content(
         self,
@@ -313,6 +322,8 @@ Return ONLY the JSON object, no additional text or explanation."""
         except Exception as e:
             logger.error(f"Error querying LLM: {e}")
             raise
+
+
 
 
 __all__ = ["ComponentExtractor", "ComponentData", "LLMResponse"]

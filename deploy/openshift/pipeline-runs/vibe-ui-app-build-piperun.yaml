@@ -24,7 +24,7 @@ spec:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 40Gi
+              storage: 2Gi
     - name: docker-credentials  
       secret:
         secretName: pipeline-pull-push-auth

@@ -96,7 +96,7 @@ class SearchRequest(BaseModel):
 
     message: str
     limit: int = 10
-    min_score: float = 0.0
+    min_score: float = 0.60
 
 
 class SearchResponse(BaseModel):
@@ -119,7 +119,7 @@ async def search(request: SearchRequest):
 
     logger.info(f"Searching for: {request.message}")
     results = knowledge_base.search_components(
-        request.message, request.limit, request.min_score
+        request.message, request.limit, min_score=request.min_score
     )
     logger.info(f"Search results: {results}")
     return SearchResponse(message="Search successful", components=results)

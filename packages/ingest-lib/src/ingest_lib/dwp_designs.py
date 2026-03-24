@@ -126,8 +126,6 @@ class DWPComponentEntry:
     when_to_use_re: ClassVar[Pattern] = re.compile(
         r"## When to use this component\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
-    research_re: ClassVar[Pattern] = re.compile(r"research", re.IGNORECASE)
-    accessibility_re: ClassVar[Pattern] = re.compile(r"accessibility", re.IGNORECASE)
 
     component_path: Path
     title: str
@@ -186,10 +184,9 @@ class DWPComponentEntry:
         status = "N/A"
         created_at, updated_at = self.extract_dates()
         has_research = ExtractComponents._has_research(self.full_content)
+        accessibility = "N/A"
         if ExtractComponents._has_accessibility_issues(self.full_content):
             accessibility = "Accessibility issues"
-        else:
-            accessibility = "N/A"
 
         logger.info(
             f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"

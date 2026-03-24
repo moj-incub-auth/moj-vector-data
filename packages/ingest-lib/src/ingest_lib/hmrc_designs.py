@@ -136,8 +136,6 @@ class HMRCComponentEntry:
     when_to_use_re: ClassVar[Pattern] = re.compile(
         r"## When to use\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
-    research_re: ClassVar[Pattern] = re.compile(r"research", re.IGNORECASE)
-    accessibility_re: ClassVar[Pattern] = re.compile(r"accessibility", re.IGNORECASE)
 
     component_path: Path
     title: str
@@ -208,8 +206,14 @@ class HMRCComponentEntry:
         description = self.extract_description()
         status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
-        has_research = self.extract_has_research()
-        accessibility = self.extract_accessibility()
+        has_research = ExtractComponents._has_research(self.full_content)
+        accessibility = "N/A"
+        if ExtractComponents._has_accessibility_issues(self.full_content):
+            accessibility = "Accessibility issues"
+
+        logger.info(
+            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+        )
         parent = "HMRC Design System"
 
         # Generate URL based on component folder name

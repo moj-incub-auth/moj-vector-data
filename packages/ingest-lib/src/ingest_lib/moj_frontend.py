@@ -117,7 +117,6 @@ class MojFrontendComponentEntry:
     overview_re: ClassVar[Pattern] = re.compile(
         r"## Overview\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
-    research_re: ClassVar[Pattern] = re.compile(r"research", re.IGNORECASE)
     component_path: Path
     frontmatter: Dict[str, str]
     full_content: str
@@ -172,10 +171,9 @@ class MojFrontendComponentEntry:
         status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
         has_research = ExtractComponents._has_research(self.full_content)
+        accessibility = "N/A"
         if ExtractComponents._has_accessibility_issues(self.full_content):
             accessibility = "Accessibility issues"
-        else:
-            accessibility = "N/A"
 
         logger.info(
             f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"

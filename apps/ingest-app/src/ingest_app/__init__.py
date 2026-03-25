@@ -8,7 +8,7 @@ from ingest_lib.hmrc_designs import HMRCComponentsIngestor
 from ingest_lib.moj_frontend import MojFrontendIngestor
 from milvus_lib import MilvusKnowledgeBase
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 

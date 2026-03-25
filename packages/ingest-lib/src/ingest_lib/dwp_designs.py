@@ -126,8 +126,6 @@ class DWPComponentEntry:
     when_to_use_re: ClassVar[Pattern] = re.compile(
         r"## When to use this component\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
-    research_re: ClassVar[Pattern] = re.compile(r"research", re.IGNORECASE)
-    accessibility_re: ClassVar[Pattern] = re.compile(r"accessibility", re.IGNORECASE)
 
     component_path: Path
     title: str
@@ -157,16 +155,6 @@ class DWPComponentEntry:
 
         return "DWP Design System component documentation"
 
-    def extract_accessibility(self) -> str:
-        """Extract accessibility level (assume AA if not specified)."""
-        # Look for WCAG mentions
-        if "WCAG" in self.full_content:
-            if "2.1" in self.full_content or "2.2" in self.full_content:
-                return "AA"
-
-        # Default to AA for government services
-        return "AA"
-
     def extract_dates(self) -> tuple[str, str]:
         """Extract or generate created_at and updated_at dates."""
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -191,11 +179,18 @@ class DWPComponentEntry:
     def to_component_entry(self) -> ComponentEntry:
         """Convert DWPComponentEntry to ComponentEntry for Milvus storage."""
         title = self.frontmatter["title"]
+
         description = self.extract_description()
         status = "N/A"
         created_at, updated_at = self.extract_dates()
-        has_research = ExtractComponents._check_has_research(self.full_content)        
-        accessibility = self.extract_accessibility()
+        has_research = ExtractComponents._has_research(self.full_content)
+        accessibility = "N/A"
+        if ExtractComponents._has_accessibility_issues(self.full_content):
+            accessibility = "Accessibility issues"
+
+        logger.info(
+            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+        )
         parent = "DWP Design System"
 
         # Generate URL based on component folder name

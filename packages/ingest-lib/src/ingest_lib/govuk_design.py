@@ -120,18 +120,12 @@ class GovUkComponentEntry:
     when_to_use_re: ClassVar[Pattern] = re.compile(
         r"## When to use this component\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
-    research_re: ClassVar[Pattern] = re.compile(r"research", re.IGNORECASE)
-    accessibility_re: ClassVar[Pattern] = re.compile(r"accessibility", re.IGNORECASE)
 
     component_path: Path
     title: str
     first_line: str
     frontmatter: Dict[str, str]
     full_content: str
-
-    def extract_has_research(self) -> bool:
-        """Check if the component mentions research."""
-        return GovUkComponentEntry.research_re.search(self.full_content) is not None
 
     def extract_description(self) -> str:
         """Extract description from the first line or 'When to use' section."""
@@ -154,16 +148,6 @@ class GovUkComponentEntry:
                     return para.strip()
 
         return "GovUk Design System component documentation"
-
-    def extract_accessibility(self) -> str:
-        """Extract accessibility level (assume AA if not specified)."""
-        # Look for WCAG mentions
-        if "WCAG" in self.full_content:
-            if "2.1" in self.full_content or "2.2" in self.full_content:
-                return "AA"
-
-        # Default to AA for government services
-        return "AA"
 
     def extract_dates(self) -> tuple[str, str]:
         """Extract or generate created_at and updated_at dates."""
@@ -192,8 +176,13 @@ class GovUkComponentEntry:
         description = self.extract_description()
         status = "N/A"
         created_at, updated_at = self.extract_dates()
-        has_research = self.extract_has_research()
-        accessibility = self.extract_accessibility()
+        has_research = ExtractComponents._has_research(self.full_content)
+        accessibility = "N/A"
+        if ExtractComponents._has_accessibility_issues(self.full_content):
+            accessibility = "Accessibility issues"
+        logger.info(
+            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+        )
         parent = "GovUk Design System"
 
         # Generate URL based on component folder name

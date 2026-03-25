@@ -4,10 +4,11 @@ version = "0.1.0"
 description = "LLM integration library for component extraction"
 readme = "README.md"
 authors = [
-    { name = "Adam Baxter", email = "ambaxter@github.com" }
+    { name = "Stelios Kousouris", email = "skousou@github.com" }
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "milvus-lib",    
     "openai>=1.0.0",
     "pydantic>=2.12.5",
 ]
@@ -15,3 +16,6 @@ dependencies = [
 [build-system]
 requires = ["uv_build>=0.10.10,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+milvus-lib = { workspace = true }

@@ -11,6 +11,7 @@ dependencies = [
     "configargparse>=1.7.5",
     "ingest-lib",
     "milvus-lib",
+    "llm-lib",
 ]
 
 [project.scripts]
@@ -23,3 +24,4 @@ build-backend = "uv_build"
 [tool.uv.sources]
 milvus-lib = { workspace = true }
 ingest-lib = { workspace = true }
+llm-lib = { workspace = true }

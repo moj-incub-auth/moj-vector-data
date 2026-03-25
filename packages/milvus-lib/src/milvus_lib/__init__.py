@@ -2,6 +2,7 @@ import itertools
 import logging
 from typing import Any, Dict, Iterable, List
 
+import requests
 from pydantic import BaseModel
 
 # PyMilvus imports
@@ -36,6 +37,7 @@ class SearchComponent(BaseModel):
     created_at: str
     updated_at: str
     has_research: bool
+    needs_research: bool
     views: int
 
 
@@ -64,11 +66,20 @@ class ComponentEntry(BaseModel):
     accessibility: str
     status: str
     has_research: bool
+    needs_research: bool
     created_at: str
     updated_at: str
     views: int
     content: str
     full_content: str
+
+    def validate_url(self):
+        """Check if the component url is valid."""
+        response = requests.head(self.url)
+        if response.status_code != 200:
+            logger.error(
+                f"Component URL not found: {response.status_code} - {self.url}"
+            )
 
     def upsert_dump(self) -> Dict[str, Any]:
         """Serialize the component for Milvus upsert, excluding the views field.
@@ -77,6 +88,7 @@ class ComponentEntry(BaseModel):
             A dictionary suitable for Collection.upsert(), with views omitted
             so Milvus can manage view counts separately.
         """
+        self.validate_url()
         return self.model_dump(exclude={"views"})
 
 
@@ -186,7 +198,14 @@ class MilvusKnowledgeBase:
             FieldSchema(
                 name="has_research",
                 dtype=DataType.BOOL,
+                default_value=False,
                 description="Whether component has research",
+            ),
+            FieldSchema(
+                name="needs_research",
+                dtype=DataType.BOOL,
+                default_value=False,
+                description="Whether component needs research",
             ),
             FieldSchema(
                 name="created_at",
@@ -323,7 +342,7 @@ class MilvusKnowledgeBase:
         query: List[float] | str,
         limit: int = 10,
         min_count: int = 3,
-        min_score: float = 0.5,
+        min_score: float = 0.2,
     ) -> List[ScoredSearchComponent]:
         """Perform semantic search over component content.
 
@@ -355,6 +374,7 @@ class MilvusKnowledgeBase:
                 "accessibility",
                 "status",
                 "has_research",
+                "needs_research",
                 "created_at",
                 "updated_at",
                 "views",
@@ -377,6 +397,7 @@ class MilvusKnowledgeBase:
                     status=hit.entity.get("status"),
                     accessibility=hit.entity.get("accessibility"),
                     has_research=hit.entity.get("has_research"),
+                    needs_research=hit.entity.get("needs_research"),
                     created_at=hit.entity.get("created_at"),
                     updated_at=hit.entity.get("updated_at"),
                     views=hit.entity.get("views"),

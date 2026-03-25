@@ -62,11 +62,11 @@ class ExtractComponents(ProjectExists, Protocol):
         raise NotImplementedError
 
     @staticmethod
-    def __has_research_available(content: str) -> bool:
+    def _has_research(content: str) -> bool:
         header_match = ExtractComponents.research_available_header_re.search(content)
         body_match = ExtractComponents.research_available_terms_re.finditer(content)
         body_count = sum(1 for _ in body_match)
-        logger.info(f"Has research available: {header_match} and {body_count}")
+        logger.debug(f"Has research available: {header_match} and {body_count}")
         if header_match and body_count > 0:
             return True
         if body_count > 1:
@@ -74,24 +74,18 @@ class ExtractComponents(ProjectExists, Protocol):
         return False
 
     @staticmethod
-    def __has_research_needed(content: str) -> bool:
+    def _needs_research(content: str) -> bool:
         header_match = ExtractComponents.research_needed_header_re.search(content)
         body_match = ExtractComponents.research_needed_terms_re.finditer(content)
         body_count = sum(1 for _ in body_match)
-        logger.info(f"Has research needed: {header_match} and {body_count}")
+        logger.debug(f"Has research needed: {header_match} and {body_count}")
 
         return bool(header_match) or body_count > 0
-
-    @staticmethod
-    def _has_research(content: str) -> bool:
-        return ExtractComponents.__has_research_available(
-            content
-        ) or ExtractComponents.__has_research_needed(content)
 
     @staticmethod
     def _has_accessibility_issues(content: str) -> bool:
         header_match = ExtractComponents.accessibility_issues_header_re.search(content)
         body_match = ExtractComponents.accessibility_issues_terms_re.finditer(content)
         body_count = sum(1 for _ in body_match)
-        logger.info(f"Has accessibility issues: {header_match} and {body_count}")
+        logger.debug(f"Has accessibility issues: {header_match} and {body_count}")
         return bool(header_match) or body_count > 0

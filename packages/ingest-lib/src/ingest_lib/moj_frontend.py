@@ -171,16 +171,18 @@ class MojFrontendComponentEntry:
         status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
         has_research = ExtractComponents._has_research(self.full_content)
+        needs_research = ExtractComponents._needs_research(self.full_content)
         accessibility = "N/A"
         if ExtractComponents._has_accessibility_issues(self.full_content):
             accessibility = "Accessibility issues"
 
         logger.info(
-            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+            f"Parsing component: {title} - has_research: {has_research} - needs_research: {needs_research} - accessibility: {accessibility}"
         )
 
         parent = "MOJ Design System"
         url = f"https://design-patterns.service.justice.gov.uk/components/{self.component_path.stem}/"
+
         content = f"""
 Title: {title}
 Description: {description}
@@ -196,6 +198,7 @@ Content: {self.full_content}
             status=status,
             accessibility=accessibility,
             has_research=has_research,
+            needs_research=needs_research,
             created_at=created_at,
             updated_at=updated_at,
             views=0,

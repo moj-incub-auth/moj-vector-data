@@ -8,7 +8,7 @@ import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_health import health
-from milvus_lib import MilvusKnowledgeBase, SearchComponent
+from milvus_lib import MilvusKnowledgeBase, ScoredSearchComponent
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 
@@ -95,13 +95,15 @@ class SearchRequest(BaseModel):
     """Request body for the /search endpoint."""
 
     message: str
+    limit: int = 10
+    min_score: float = 0.50
 
 
 class SearchResponse(BaseModel):
     """Response body for the /search endpoint."""
 
     message: str
-    components: list[SearchComponent] = []
+    components: list[ScoredSearchComponent] = []
 
 
 @app.post("/search", response_model=SearchResponse)
@@ -116,7 +118,9 @@ async def search(request: SearchRequest):
         )
 
     logger.info(f"Searching for: {request.message}")
-    results = knowledge_base.search_components(request.message)
+    results = knowledge_base.search_components(
+        request.message, request.limit, min_score=request.min_score
+    )
     logger.info(f"Search results: {results}")
     return SearchResponse(message="Search successful", components=results)
 

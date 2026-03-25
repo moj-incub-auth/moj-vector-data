@@ -17,7 +17,7 @@ from pymilvus import (
 )
 from pymilvus.client.types import LoadState
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"uvicorn.{__name__}")
 
 
 class SearchComponent(BaseModel):
@@ -323,7 +323,7 @@ class MilvusKnowledgeBase:
         query: List[float] | str,
         limit: int = 10,
         min_count: int = 3,
-        min_score: float = 0.0,
+        min_score: float = 0.5,
     ) -> List[ScoredSearchComponent]:
         """Perform semantic search over component content.
 
@@ -365,11 +365,9 @@ class MilvusKnowledgeBase:
 
         # Format results
         formatted_results = []
+        filtered_results = []
         for hits in results:
             for hit in hits:
-                if count >= min_count and hit.score < min_score:
-                    continue
-                count += 1
                 result = ScoredSearchComponent(
                     score=hit.score,
                     title=hit.entity.get("title"),
@@ -383,5 +381,10 @@ class MilvusKnowledgeBase:
                     updated_at=hit.entity.get("updated_at"),
                     views=hit.entity.get("views"),
                 )
-                formatted_results.append(result)
+                if count >= min_count and hit.score < min_score:
+                    filtered_results.append(result)
+                else:
+                    count += 1
+                    formatted_results.append(result)
+        logger.info(f"Filtered results: {filtered_results}")
         return formatted_results

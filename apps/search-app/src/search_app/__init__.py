@@ -96,7 +96,7 @@ class SearchRequest(BaseModel):
 
     message: str
     limit: int = 10
-    min_score: float = 0.60
+    min_score: float = 0.50
 
 
 class SearchResponse(BaseModel):

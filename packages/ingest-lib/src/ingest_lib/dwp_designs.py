@@ -184,17 +184,18 @@ class DWPComponentEntry:
         status = "N/A"
         created_at, updated_at = self.extract_dates()
         has_research = ExtractComponents._has_research(self.full_content)
+        needs_research = ExtractComponents._needs_research(self.full_content)
         accessibility = "N/A"
         if ExtractComponents._has_accessibility_issues(self.full_content):
             accessibility = "Accessibility issues"
 
         logger.info(
-            f"Parsing component: {title} - has_research: {has_research} - accessibility: {accessibility}"
+            f"Parsing component: {title} - has_research: {has_research} - needs_research: {needs_research} - accessibility: {accessibility}"
         )
         parent = "DWP Design System"
 
         # Generate URL based on component folder name
-        url = f"https://design-system.dwp.gov.uk/components/{self.component_path.name}"
+        url = f"https://design-system.dwp.gov.uk/components/{self.component_path.name}/"
 
         content = f"""
 Title: {title}
@@ -212,6 +213,7 @@ Content: {self.full_content}
             status=status,
             accessibility=accessibility,
             has_research=has_research,
+            needs_research=needs_research,
             created_at=created_at,
             updated_at=updated_at,
             views=0,

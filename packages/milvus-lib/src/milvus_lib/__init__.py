@@ -271,22 +271,10 @@ class MilvusKnowledgeBase:
             True if the collection is ready for search, False otherwise.
             Attempts to reload the collection if the index check fails.
         """
+        utility.has_collection
         if self.collection is None:
             return False
-        try:
-            if self.collection.has_index(index_name="content_embedding"):
-                return True
-        except Exception as e:
-            logger.error(f"Error checking health: {e}")
-            if utility.has_collection(self.collection_name):
-                old_collection = self.collection
-                self.collection = Collection(self.collection_name)
-                self.collection.load()
-                try:
-                    old_collection.release()
-                except Exception as e:
-                    logger.error(f"Error releasing old collection: {e}")
-            return False
+        return utility.has_collection(self.collection_name)
 
     def connect(self, drop_existing: bool = False):
         """Connect to Milvus and load or create the collection.

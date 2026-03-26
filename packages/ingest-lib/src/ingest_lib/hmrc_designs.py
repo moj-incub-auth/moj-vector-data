@@ -43,10 +43,16 @@ class HMRCComponentsIngestor(ExtractComponents):
             logger.debug(datesdict)
             logger.debug("****************************")
 
+        skip_dirs = [
+            "__tests__",
+            "hmrc-design-patterns-archive",
+            "hmrc-design-patterns-backlog",
+        ]
+
         for component_path in self.components_dir.iterdir():
             if not component_path.is_dir():
                 continue
-            if component_path.stem == "__tests__":
+            if component_path.stem in skip_dirs:
                 continue
 
             index_file = component_path / "index.njk"

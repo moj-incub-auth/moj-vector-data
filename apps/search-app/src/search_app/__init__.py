@@ -107,7 +107,7 @@ class SearchResponse(BaseModel):
 
 
 @app.post("/search", response_model=SearchResponse)
-async def search(request: SearchRequest):
+def search(request: SearchRequest):
     """Perform semantic search over design system components."""
 
     input_guardrails_fired = guardrails(request.message)

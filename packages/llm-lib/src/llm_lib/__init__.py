@@ -28,7 +28,9 @@ class LLMComponentDataResponse(BaseModel):
     created_at: str
     updated_at: str
     has_research: bool
+    needs_research: bool
     views: int = 0
+    status: str
 
     class Config:
         populate_by_name = True
@@ -94,9 +96,12 @@ class LLMComponentEntry:
         created_at= self.llm_structured_output.created_at
         updated_at = self.llm_structured_output.updated_at
         has_research = self.llm_structured_output.has_research
+        needs_research = self.llm_structured_output.needs_research
         accessibility = self.llm_structured_output.accessibility
         parent = self.llm_structured_output.parent
         url = self.llm_structured_output.url
+        status = self.llm_structured_output.status
+
 
         content = f"""
 Title: {title}
@@ -107,20 +112,23 @@ Content: {self.full_content}
 
         logger.debug(f"TRANSFORMED FOR MILVUS COMPONENT [{title}]")
 
+
         return ComponentEntry(
             component_id=url,
             title=title,
             description=description,
             url=url,
             parent=parent,
-            status=status,
+            status=status,                  #needs to be aligned to Adam's
             accessibility=accessibility,
-            has_research=has_research,
+            has_research=has_research,      #needs to be aligned to Adam's
+            needs_research=needs_research,           #needs to be added and aligned to Adam's
             created_at=created_at,
             updated_at=updated_at,
             views=0,
             content=content,
             full_content=self.full_content,
+
         )
 
 

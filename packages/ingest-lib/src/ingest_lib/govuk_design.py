@@ -14,125 +14,130 @@ import yaml
 # Local imports
 from milvus_lib import ComponentEntry
 
+from ingest_lib.file_dates import GitFileDates
+
 from .protocols import ExtractComponents
 
 logger = logging.getLogger(__name__)
 
 
-class MojFrontendIngestor(ExtractComponents):
-    """Extracts design system components from a moj-frontend project.
-
-    Walks the docs/components directory, parses YAML frontmatter and markdown
-    content from each component's index.md and related .md files, and yields
-    ComponentEntry instances suitable for the Milvus knowledge base.
-    """
-
+class GovUkComponentsIngestor(ExtractComponents):
     project_root: Path
     components_dir: Path
 
     def __init__(self, project_root: Path):
-        """Initialize the ingestor with the moj-frontend project root.
-
-        Args:
-            project_root: Path to the moj-frontend repository root.
-        """
         self.project_root = project_root
-        self.components_dir = self.project_root / "docs" / "components"
+        self.components_dir = self.project_root / "src" / "components"
 
-    def __walk_components(self) -> Iterator[MojFrontendComponentEntry]:
-        """Walk component directories and yield parsed MojFrontendComponentEntry objects."""
+    def __walk_components(self) -> Iterator[GovUkComponentEntry]:
+        """Walk through component directories and yield GovUkComponentEntry objects."""
+        frontmatter_re = re.compile(r"^---\s*\n(.*?)---", re.MULTILINE | re.DOTALL)
 
-        metadata_re = re.compile(r"^---\s*\n(.*?)---", re.MULTILINE | re.DOTALL)
+        gitfiledates = GitFileDates(self.components_dir)
+        datesdict = gitfiledates.get_file_dates("index.md")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("****************************")
+            logger.debug(datesdict)
+            logger.debug("****************************")
+
         for component_path in self.components_dir.iterdir():
             if not component_path.is_dir():
                 continue
-            index_md = component_path / "index.md"
-            if not index_md.exists():
-                logger.error(f"Index file not found for component: {component_path}")
-                raise FileNotFoundError(
-                    f"Index file not found for component: {component_path}"
-                )
-            index_content = index_md.read_text()
-            block_match = metadata_re.search(index_content)
-            if not block_match:
-                logger.error(
-                    f"Metadata block not found for component: {component_path}"
-                )
+
+            index_file = component_path / "index.md"
+            if not index_file.exists():
+                logger.warning(f"index.md not found for component: {component_path}")
+                continue
+
+            index_content = index_file.read_text()
+            frontmatter_match = frontmatter_re.search(index_content)
+            if not frontmatter_match:
+                logger.error(f"Frontmatter not found for component: {component_path}")
                 raise ValueError(
-                    f"Metadata block not found for component: {component_path}"
+                    f"Frontmatter not found for component: {component_path}"
                 )
-            header_content = block_match.group(1)
-            frontmatter = yaml.safe_load(header_content)
+            index_frontmatter = yaml.safe_load(frontmatter_match.group(1))
+
+            title = index_frontmatter["title"]
+            first_line = index_frontmatter.get("description")
+
+            logger.debug("File: ", index_file)
+            foldername = str(component_path).rsplit("/", 1)[-1]
+            key = f"{foldername}/{'index.md'}"
+            logger.debug("Path: ", foldername)
+            logger.debug("Last update at: ", datesdict[key])
+
+            # 1. Parse the string into a datetime object
+            # %a: Weekday, %b: Month, %d: Day, %H:%M:%S: Time, %Y: Year, %z: UTC offset
+            dt_obj = datetime.strptime(datesdict[key], "%a %b %d %H:%M:%S %Y %z")
+
+            # 2. Format the object into your desired string
+            formatted_date = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+
+            # Create frontmatter dictionary
+            frontmatter = {
+                "title": title,
+                "statusDate": formatted_date,
+            }
 
             content_buffer = StringIO()
             content_buffer.write("# Source: index.md\n\n")
             content_buffer.write(
-                f"*Path: moj-frontend/docs/components/{component_path.stem}/index.md*\n\n"
+                f"*Path: govuk-design-system/src/components/{component_path.name}/index.md*\n\n"
             )
             content_buffer.write(index_content)
-            for md_file in component_path.glob("*.md"):
-                if md_file == index_md:
-                    continue
-                content_buffer.write("\n\n---\n\n")
-                content_buffer.write(f"# Source: {md_file.name}\n\n")
-                content_buffer.write(
-                    f"*Path: moj-frontend/docs/components/{component_path.stem}/{md_file.name}*\n\n"
-                )
-                content_buffer.write(md_file.read_text())
+
             full_content = content_buffer.getvalue()
-            yield MojFrontendComponentEntry(
+
+            yield GovUkComponentEntry(
                 component_path=component_path,
+                title=title,
+                first_line=first_line,
                 frontmatter=frontmatter,
                 full_content=full_content,
             )
 
     def project_exists(self) -> bool:
-        """Return True if the project root directory exists."""
         return self.project_root.exists()
 
     def project_root(self) -> Path:
-        """Return the path to the project root directory."""
         return self.project_root
 
     def component_count(self) -> int:
-        """Return the number of components (subdirs with index.md) in the project."""
         if self.components_dir.exists() and self.components_dir.is_dir():
             return sum(1 for _ in self.components_dir.glob("*/index.md"))
         return 0
 
     def extract_components(self) -> Iterator[ComponentEntry]:
-        """Yield ComponentEntry instances from all components in the project."""
         for component in self.__walk_components():
             yield component.to_component_entry()
 
 
 @dataclass
-class MojFrontendComponentEntry:
-    """A parsed component from moj-frontend with frontmatter and full content.
+class GovUkComponentEntry:
+    """Dataclass for DWP Design System component entries."""
 
-    Holds raw data from the filesystem and provides extraction methods to
-    derive structured fields (description, dates, accessibility) for ComponentEntry.
-    """
-
-    overview_re: ClassVar[Pattern] = re.compile(
-        r"## Overview\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
+    when_to_use_re: ClassVar[Pattern] = re.compile(
+        r"## When to use this component\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
+
     component_path: Path
+    title: str
+    first_line: str
     frontmatter: Dict[str, str]
     full_content: str
 
     def extract_description(self) -> str:
-        """Extract description from frontmatter lede or Overview section.
+        """Extract description from the first line or 'When to use' section."""
+        # Use the first line as the primary description
+        if self.first_line:
+            return self.first_line
 
-        Falls back to the first paragraph of the Overview section, or a default
-        string if neither is available.
-        """
-        if "lede" in self.frontmatter:
-            return self.frontmatter["lede"]
-        overview_match = MojFrontendComponentEntry.overview_re.search(self.full_content)
-        if overview_match:
+        # Fallback to "When to use this component" section
+        when_to_use_match = GovUkComponentEntry.when_to_use_re.search(self.full_content)
+        if when_to_use_match:
             # Get first paragraph
-            paragraphs = overview_match.group(1).strip().split("\n\n")
+            paragraphs = when_to_use_match.group(1).strip().split("\n\n")
             for para in paragraphs:
                 # Skip example blocks and empty lines
                 if (
@@ -141,7 +146,8 @@ class MojFrontendComponentEntry:
                     and not para.startswith("<")
                 ):
                     return para.strip()
-        return "Component documentation"
+
+        return "GovUk Design System component documentation"
 
     def extract_dates(self) -> tuple[str, str]:
         """Extract or generate created_at and updated_at dates."""
@@ -153,9 +159,9 @@ class MojFrontendComponentEntry:
                 # Parse date like "February 2025"
                 date_str = self.frontmatter["statusDate"]
                 # Convert to ISO format (assume first day of month)
-                date_obj = datetime.strptime(date_str, "%B %Y")
-                formatted_date = date_obj.strftime("%Y-%m-%d %H:%M:%S")
-                return formatted_date, formatted_date
+                # date_obj = datetime.strptime(date_str, "%B %Y")
+                # formatted_date = date_obj.strftime("%Y-%m-%d %H:%M:%S")
+                return date_str, date_str
             except Exception as e:
                 logger.error(
                     f"Failed to parse status date: {self.frontmatter['statusDate']}: {e}"
@@ -165,23 +171,23 @@ class MojFrontendComponentEntry:
         return now, now
 
     def to_component_entry(self) -> ComponentEntry:
-        """Convert this parsed component into a ComponentEntry for Milvus ingestion."""
+        """Convert GovUkComponentEntry to ComponentEntry for Milvus storage."""
         title = self.frontmatter["title"]
         description = self.extract_description()
-        status = self.frontmatter["status"]
+        status = "N/A"
         created_at, updated_at = self.extract_dates()
         has_research = ExtractComponents._has_research(self.full_content)
         needs_research = ExtractComponents._needs_research(self.full_content)
         accessibility = "N/A"
         if ExtractComponents._has_accessibility_issues(self.full_content):
             accessibility = "Accessibility issues"
-
         logger.info(
             f"Parsing component: {title} - has_research: {has_research} - needs_research: {needs_research} - accessibility: {accessibility}"
         )
+        parent = "GovUk Design System"
 
-        parent = "MOJ Design System"
-        url = f"https://design-patterns.service.justice.gov.uk/components/{self.component_path.stem}/"
+        # Generate URL based on component folder name
+        url = f"https://design-system.service.gov.uk/components/{self.component_path.name}/"
 
         content = f"""
 Title: {title}
@@ -189,6 +195,7 @@ Description: {description}
 Parent: {parent}
 Content: {self.full_content}
         """[:65000].strip()
+
         return ComponentEntry(
             component_id=url,
             title=title,

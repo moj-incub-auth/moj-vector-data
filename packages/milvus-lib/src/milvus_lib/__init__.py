@@ -2,6 +2,7 @@ import itertools
 import logging
 from typing import Any, Dict, Iterable, List
 
+import requests
 from pydantic import BaseModel
 
 # PyMilvus imports
@@ -15,8 +16,9 @@ from pymilvus import (
     connections,
     utility,
 )
+from pymilvus.client.types import LoadState
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"uvicorn.{__name__}")
 
 
 class SearchComponent(BaseModel):
@@ -35,6 +37,7 @@ class SearchComponent(BaseModel):
     created_at: str
     updated_at: str
     has_research: bool
+    needs_research: bool
     views: int
 
 
@@ -63,11 +66,20 @@ class ComponentEntry(BaseModel):
     accessibility: str
     status: str
     has_research: bool
+    needs_research: bool
     created_at: str
     updated_at: str
     views: int
     content: str
     full_content: str
+
+    def validate_url(self):
+        """Check if the component url is valid."""
+        response = requests.head(self.url)
+        if response.status_code != 200:
+            logger.error(
+                f"Component URL not found: {response.status_code} - {self.url}"
+            )
 
     def upsert_dump(self) -> Dict[str, Any]:
         """Serialize the component for Milvus upsert, excluding the views field.
@@ -76,6 +88,7 @@ class ComponentEntry(BaseModel):
             A dictionary suitable for Collection.upsert(), with views omitted
             so Milvus can manage view counts separately.
         """
+        self.validate_url()
         return self.model_dump(exclude={"views"})
 
 
@@ -185,7 +198,14 @@ class MilvusKnowledgeBase:
             FieldSchema(
                 name="has_research",
                 dtype=DataType.BOOL,
+                default_value=False,
                 description="Whether component has research",
+            ),
+            FieldSchema(
+                name="needs_research",
+                dtype=DataType.BOOL,
+                default_value=False,
+                description="Whether component needs research",
             ),
             FieldSchema(
                 name="created_at",
@@ -251,22 +271,10 @@ class MilvusKnowledgeBase:
             True if the collection is ready for search, False otherwise.
             Attempts to reload the collection if the index check fails.
         """
+        utility.has_collection
         if self.collection is None:
             return False
-        try:
-            if self.collection.has_index(index_name="content_embedding"):
-                return True
-        except Exception as e:
-            logger.error(f"Error checking health: {e}")
-            if utility.has_collection(self.collection_name):
-                old_collection = self.collection
-                self.collection = Collection(self.collection_name)
-                self.collection.load()
-                try:
-                    old_collection.release()
-                except Exception as e:
-                    logger.error(f"Error releasing old collection: {e}")
-            return False
+        return utility.has_collection(self.collection_name)
 
     def connect(self, drop_existing: bool = False):
         """Connect to Milvus and load or create the collection.
@@ -318,7 +326,11 @@ class MilvusKnowledgeBase:
         self.collection.flush()
 
     def search_components(
-        self, query: List[float] | str, limit: int = 10
+        self,
+        query: List[float] | str,
+        limit: int = 10,
+        min_count: int = 3,
+        min_score: float = 0.2,
     ) -> List[ScoredSearchComponent]:
         """Perform semantic search over component content.
 
@@ -332,6 +344,9 @@ class MilvusKnowledgeBase:
         """
         # Search parameters
         search_params = {"metric_type": "COSINE", "params": {"nprobe": 10}}
+
+        if utility.load_state(self.collection_name) == LoadState.NotLoad:
+            self.collection.load()
 
         # Perform search
         results = self.collection.search(
@@ -347,14 +362,18 @@ class MilvusKnowledgeBase:
                 "accessibility",
                 "status",
                 "has_research",
+                "needs_research",
                 "created_at",
                 "updated_at",
                 "views",
             ],
         )
 
+        count = 0
+
         # Format results
         formatted_results = []
+        filtered_results = []
         for hits in results:
             for hit in hits:
                 result = ScoredSearchComponent(
@@ -366,9 +385,15 @@ class MilvusKnowledgeBase:
                     status=hit.entity.get("status"),
                     accessibility=hit.entity.get("accessibility"),
                     has_research=hit.entity.get("has_research"),
+                    needs_research=hit.entity.get("needs_research"),
                     created_at=hit.entity.get("created_at"),
                     updated_at=hit.entity.get("updated_at"),
                     views=hit.entity.get("views"),
                 )
-                formatted_results.append(result)
+                if count >= min_count and hit.score < min_score:
+                    filtered_results.append(result)
+                else:
+                    count += 1
+                    formatted_results.append(result)
+        logger.info(f"Filtered results: {filtered_results}")
         return formatted_results

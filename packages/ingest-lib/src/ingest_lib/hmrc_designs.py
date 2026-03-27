@@ -8,57 +8,83 @@ from pathlib import Path
 from re import Pattern
 from typing import ClassVar, Dict, Iterator
 
+# Third party imports
+import markdownify as md
+import yaml
+
 # Local imports
 from milvus_lib import ComponentEntry
 
 from ingest_lib.file_dates import GitFileDates
-
-from .protocols import ExtractComponents
+from ingest_lib.protocols import ExtractComponents
 
 logger = logging.getLogger(__name__)
 
 
-class DWPComponentsIngestor(ExtractComponents):
+class HMRCComponentsIngestor(ExtractComponents):
     project_root: Path
     components_dir: Path
 
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self.components_dir = self.project_root / "app" / "views" / "components"
+        self.components_dir = self.project_root / "src" / "hmrc-design-patterns"
 
-    def __walk_components(self) -> Iterator[DWPComponentEntry]:
-        """Walk through component directories and yield DWPComponentEntry objects."""
+    def __walk_components(self) -> Iterator[HMRCComponentEntry]:
+        """Walk through component directories and yield HMRCComponentEntry objects."""
+        frontmatter_re = re.compile(r"^---\s*\n(.*?)---", re.MULTILINE | re.DOTALL)
+        first_line_re = re.compile(
+            r"\{%\s*block content\s*%\}([\s\S]*?)(?=^#|\Z)", re.MULTILINE
+        )
 
         gitfiledates = GitFileDates(self.components_dir)
-        datesdict = gitfiledates.get_file_dates("README.md.njk")
+        datesdict = gitfiledates.get_file_dates("index.njk")
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("****************************")
             logger.debug(datesdict)
             logger.debug("****************************")
 
+        skip_dirs = [
+            "__tests__",
+            "hmrc-design-patterns-archive",
+            "hmrc-design-patterns-backlog",
+        ]
+
         for component_path in self.components_dir.iterdir():
             if not component_path.is_dir():
                 continue
-
-            readme_file = component_path / "README.md.njk"
-            if not readme_file.exists():
-                logger.warning(
-                    f"README.md.njk not found for component: {component_path}"
-                )
+            if component_path.stem in skip_dirs:
                 continue
 
-            readme_content = readme_file.read_text()
+            index_file = component_path / "index.njk"
+            if not index_file.exists():
+                logger.warning(f"index.njk not found for component: {component_path}")
+                continue
 
-            # Extract first line for description
-            first_line = readme_content.split("\n")[0].strip()
+            index_content = index_file.read_text()
 
-            # Create title from folder name: replace dashes with spaces
-            # Example: "key-details-bar" becomes "Key Details Bar"
-            component_title = component_path.name.replace("-", " ").title()
+            frontmatter_match = frontmatter_re.search(index_content)
+            if not frontmatter_match:
+                logger.error(f"Frontmatter not found for component: {component_path}")
+                raise ValueError(
+                    f"Frontmatter not found for component: {component_path}"
+                )
+            index_frontmatter = yaml.safe_load(frontmatter_match.group(1))
 
-            logger.debug("File: ", readme_file)
+            title = index_frontmatter["title"]
+            status = index_frontmatter.get("status", "N/A")
+
+            markdown_content = md.markdownify(index_content, heading_style=md.ATX)
+
+            first_line = "N/A"
+            first_line_match = first_line_re.search(markdown_content)
+            if not first_line_match:
+                logger.error(f"Description not found for component: {component_path}")
+            else:
+                first_line = first_line_match.group(1).strip()
+
+            logger.debug("File: ", index_file)
             foldername = str(component_path).rsplit("/", 1)[-1]
-            key = f"{foldername}/{'README.md.njk'}"
+            key = f"{foldername}/{'index.njk'}"
             logger.debug("Path: ", foldername)
             logger.debug("Last update at: ", datesdict[key])
 
@@ -71,33 +97,23 @@ class DWPComponentsIngestor(ExtractComponents):
 
             # Create frontmatter dictionary
             frontmatter = {
-                "title": component_title,
+                "title": title,
                 "statusDate": formatted_date,
+                "status": status,
             }
 
             content_buffer = StringIO()
-            content_buffer.write("# Source: README.md.njk\n\n")
+            content_buffer.write("# Source: index.njk\n\n")
             content_buffer.write(
-                f"*Path: design-system/app/views/components/{component_path.name}/README.md.njk*\n\n"
+                f"*Path: design-system/src/hmrc-design-patterns/{component_path.name}/index.njk*\n\n"
             )
-            content_buffer.write(readme_content)
-
-            # Check for other .njk files in the directory
-            for njk_file in component_path.glob("*.njk"):
-                if njk_file == readme_file:
-                    continue
-                content_buffer.write("\n\n---\n\n")
-                content_buffer.write(f"# Source: {njk_file.name}\n\n")
-                content_buffer.write(
-                    f"*Path: design-system/app/views/components/{component_path.name}/{njk_file.name}*\n\n"
-                )
-                content_buffer.write(njk_file.read_text())
+            content_buffer.write(markdown_content)
 
             full_content = content_buffer.getvalue()
 
-            yield DWPComponentEntry(
+            yield HMRCComponentEntry(
                 component_path=component_path,
-                title=component_title,
+                title=title,
                 first_line=first_line,
                 frontmatter=frontmatter,
                 full_content=full_content,
@@ -111,7 +127,7 @@ class DWPComponentsIngestor(ExtractComponents):
 
     def component_count(self) -> int:
         if self.components_dir.exists() and self.components_dir.is_dir():
-            return sum(1 for _ in self.components_dir.glob("*/README.md.njk"))
+            return sum(1 for _ in self.components_dir.glob("*/index.njk"))
         return 0
 
     def extract_components(self) -> Iterator[ComponentEntry]:
@@ -120,11 +136,11 @@ class DWPComponentsIngestor(ExtractComponents):
 
 
 @dataclass
-class DWPComponentEntry:
-    """Dataclass for DWP Design System component entries."""
+class HMRCComponentEntry:
+    """Dataclass for HMRC Design System component entries."""
 
     when_to_use_re: ClassVar[Pattern] = re.compile(
-        r"## When to use this component\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
+        r"## When to use\s*\n+(.+?)(?=\n##|\n#|$)", re.DOTALL
     )
 
     component_path: Path
@@ -133,6 +149,10 @@ class DWPComponentEntry:
     frontmatter: Dict[str, str]
     full_content: str
 
+    def extract_has_research(self) -> bool:
+        """Check if the component mentions research."""
+        return HMRCComponentEntry.research_re.search(self.full_content) is not None
+
     def extract_description(self) -> str:
         """Extract description from the first line or 'When to use' section."""
         # Use the first line as the primary description
@@ -140,7 +160,7 @@ class DWPComponentEntry:
             return self.first_line
 
         # Fallback to "When to use this component" section
-        when_to_use_match = DWPComponentEntry.when_to_use_re.search(self.full_content)
+        when_to_use_match = HMRCComponentEntry.when_to_use_re.search(self.full_content)
         if when_to_use_match:
             # Get first paragraph
             paragraphs = when_to_use_match.group(1).strip().split("\n\n")
@@ -153,7 +173,17 @@ class DWPComponentEntry:
                 ):
                     return para.strip()
 
-        return "DWP Design System component documentation"
+        return "HMRC Design System component documentation"
+
+    def extract_accessibility(self) -> str:
+        """Extract accessibility level (assume AA if not specified)."""
+        # Look for WCAG mentions
+        if "WCAG" in self.full_content:
+            if "2.1" in self.full_content or "2.2" in self.full_content:
+                return "AA"
+
+        # Default to AA for government services
+        return "AA"
 
     def extract_dates(self) -> tuple[str, str]:
         """Extract or generate created_at and updated_at dates."""
@@ -177,11 +207,10 @@ class DWPComponentEntry:
         return now, now
 
     def to_component_entry(self) -> ComponentEntry:
-        """Convert DWPComponentEntry to ComponentEntry for Milvus storage."""
+        """Convert HMRCComponentEntry to ComponentEntry for Milvus storage."""
         title = self.frontmatter["title"]
-
         description = self.extract_description()
-        status = "N/A"
+        status = self.frontmatter["status"]
         created_at, updated_at = self.extract_dates()
         has_research = ExtractComponents._has_research(self.full_content)
         needs_research = ExtractComponents._needs_research(self.full_content)
@@ -192,10 +221,10 @@ class DWPComponentEntry:
         logger.info(
             f"Parsing component: {title} - has_research: {has_research} - needs_research: {needs_research} - accessibility: {accessibility}"
         )
-        parent = "DWP Design System"
+        parent = "HMRC Design System"
 
         # Generate URL based on component folder name
-        url = f"https://design-system.dwp.gov.uk/components/{self.component_path.name}/"
+        url = f"https://design.tax.service.gov.uk/hmrc-design-patterns/{self.component_path.name}/"
 
         content = f"""
 Title: {title}

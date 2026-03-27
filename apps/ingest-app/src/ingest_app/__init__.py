@@ -3,6 +3,8 @@ from pathlib import Path
 
 import configargparse
 from ingest_lib.dwp_designs import DWPComponentsIngestor
+from ingest_lib.govuk_design import GovUkComponentsIngestor
+from ingest_lib.hmrc_designs import HMRCComponentsIngestor
 from ingest_lib.moj_frontend import MojFrontendIngestor
 from milvus_lib import MilvusKnowledgeBase
 from llm_lib import LLMIngestionAssistantBase
@@ -10,7 +12,7 @@ from llm_lib.nhs_designs import NHSComponentsIngestorAI
 from llm_lib.dwp_designs import DWPComponentsIngestorAI
 from llm_lib.moj_designs import MOJComponentsIngestorAI
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +178,9 @@ def main():
 
         for component_ingest in [
             MojFrontendIngestor(ingest_dir / "moj-frontend"),
-            DWPComponentsIngestor(ingest_dir / "design-system"),
+            DWPComponentsIngestor(ingest_dir / "dwp-design-system"),
+            GovUkComponentsIngestor(ingest_dir / "govuk-design-system"),
+            HMRCComponentsIngestor(ingest_dir / "hmrc-design-system"),
         ]:
             if not component_ingest.project_exists():
                 logger.warning(f"Project not found: {component_ingest.project_root}")
@@ -222,8 +226,8 @@ def main():
 
         for ai_component_ingest in [
             NHSComponentsIngestorAI(llm_assistant, ingest_dir / "nhsuk-service-manual"),
-            DWPComponentsIngestorAI(llm_assistant, ingest_dir / "design-system"),
-            MOJComponentsIngestorAI(llm_assistant, ingest_dir / "moj-frontend"),            
+            # DWPComponentsIngestorAI(llm_assistant, ingest_dir / "design-system"),
+            # MOJComponentsIngestorAI(llm_assistant, ingest_dir / "moj-frontend"),            
         ]:
 
             if not ai_component_ingest.project_exists():
@@ -258,14 +262,14 @@ def main():
             print(f"Result #{idx} (Similarity: {result.score:.4f})")
             print(f"  Title: {result.title}")
             print(f"  Description: {result.description[:100]}...")
-            print(f"  URL: {result.url})")
+            print(f"  URL: {result.url}")
             print(f"  Parent: {result.parent}")
             print(f"  Status: {result.status}")
             print(f"  Accessibility: {result.accessibility}")
             print(f"  Has Research: {result.has_research}")
             print(f"  Created At: {result.created_at}")
             print(f"  Updated At: {result.updated_at}")
-            print(f"  Views: {result.views:.4f})")
+            print(f"  Views: {result.views:.4f}")
         milvus_client.close()
 
 

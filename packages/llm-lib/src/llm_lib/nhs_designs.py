@@ -149,7 +149,8 @@ Parent Design System: NHS Design System
 - accessibility: Value must be either 'Accessibility issues' or an empty string. Nothing else. Value is 'Accessibility issues' when there is a heading 'Accessibility issues', or the file content includes 'does not meet WCAG', 'known accessibility issues', 'users will find it difficult', 'assistive technology users', 'this fails' otherwise set to an empty string.
 - created_at / updated_at: Convert 'dateUpdated' to "YYYY-MM-DD HH:MM:SS". If time is missing, use "00:00:00".
 - views: Set to 0.
-- has_research: Boolean; true if user research or testing is mentioned.
+- has_research: Value is True or False. True when there is a heading starting 'Research' or the file content has expressions 'research showed', 'users understood','we found','testing showed','we observed','usability tested','research has shown','found','has shown'. Else Fasle.
+- needs_research: Value is True or False. True when there is a heading 'Needs more research' or the file content has expressions 'we need more research', 'research needed','we need more evidence','needs further testing','get in touch to share research','if you’ve done any user research'. Else Fasle.
 - Return a valid JSON object with the following exact structure
 </DATA_MAPPING>
 
@@ -164,7 +165,9 @@ Parent Design System: NHS Design System
     "created_at": "2026-03-04 10:55:00",
     "updated_at": "2026-03-04 10:55:00",
     "has_research": false,
-    "views": 0
+    "needs_research": false,
+    "views": 0,
+    "status": "N/A"
 }}
 </OUTPUT_SCHEMA>
 

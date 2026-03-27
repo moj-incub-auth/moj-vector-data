@@ -4,16 +4,15 @@ import json
 import logging
 import hashlib
 import re
+from re import Pattern
 from pathlib import Path
-from typing import Iterator, Protocol
+from typing import ClassVar, Iterator, Protocol
 
 from milvus_lib import ComponentEntry
 from llm_lib import LLMIngestionAssistantBase
 from llm_lib import LLMComponentDataResponse
 
 logger = logging.getLogger(__name__)
-
-
 
 class ProjectExists(Protocol):
     """Protocol for types that represent a project with a root directory."""
@@ -35,6 +34,29 @@ class ComponentsExtractor(Protocol):
     components_dir: Path
     llm_assistant: LLMIngestionAssistantBase
 
+    # research_available_header_re: ClassVar[Pattern] = re.compile(
+    #     r"#+\s*(?:Research|Research findings)", re.IGNORECASE
+    # )
+    # research_available_terms_re: ClassVar[Pattern] = re.compile(
+    #     r"research showed|users understood|we found|testing showed|we observed|usability tested|research has shown|found|has shown",
+    #     re.IGNORECASE,
+    # )
+
+    # research_needed_header_re: ClassVar[Pattern] = re.compile(
+    #     r"#+\s*(?:Needs more research)", re.IGNORECASE
+    # )
+    # research_needed_terms_re: ClassVar[Pattern] = re.compile(
+    #     r"we need more research|research needed|we need more evidence|needs further testing|get in touch to share research|we want to do more usability testing|if you\’ve done any user research",
+    #     re.IGNORECASE,
+    # )
+
+    # accessibility_issues_header_re: ClassVar[Pattern] = re.compile(
+    #     r"#+\s*(?:Accessibility issues)", re.IGNORECASE
+    # )
+    # accessibility_issues_terms_re: ClassVar[Pattern] = re.compile(
+    #     r"does not meet WCAG|known accessibility issues|users will find it difficult|assistive technology users|this fails",
+    #     re.IGNORECASE,
+
     @abstractmethod
     def _build_extraction_prompt(self, file_content: str, component_url: str) -> ComponentEntry:
         """Yield ComponentEntry instances from the project."""
@@ -44,51 +66,37 @@ class ComponentsExtractor(Protocol):
     def extract_components(self) -> Iterator[ComponentEntry]:
         """Yield ComponentEntry instances from the project."""
         raise NotImplementedError    
-    
-    @staticmethod
-    def _check_has_research(self, content: str) -> bool:
-        """
-        Check if the document contains research based on specific criteria.
 
-        Returns True if the document contains a heading "Research" OR "Research findings"
-        AND one or more of the key terms:
-        - "research showed"
-        - "users understood"
-        - "we found"
-        - "testing showed"
-        - "we observed"
+    # @staticmethod
+    # def _has_research(content: str) -> bool:
+    #     header_match = ExtractComponents.research_available_header_re.search(content)
+    #     body_match = ExtractComponents.research_available_terms_re.finditer(content)
+    #     body_count = sum(1 for _ in body_match)
+    #     logger.debug(f"Has research available: {header_match} and {body_count}")
+    #     if header_match and body_count > 0:
+    #         return True
+    #     if body_count > 1:
+    #         return True
+    #     return False
 
-        Args:
-            content: The document content to check
+    # @staticmethod
+    # def _needs_research(content: str) -> bool:
+    #     header_match = ComponentsExtractor.research_needed_header_re.search(content)
+    #     body_match = ComponentsExtractor.research_needed_terms_re.finditer(content)
+    #     body_count = sum(1 for _ in body_match)
+    #     logger.debug(f"Has research needed: {header_match} and {body_count}")
 
-        Returns:
-            bool: True if research criteria are met
-        """
-        # Check for research headings (case-insensitive)
-        research_heading_pattern = re.compile(
-            r"##\s*(?:Research|Research findings)\s*$", re.IGNORECASE | re.MULTILINE
-        )
-        has_research_heading = bool(research_heading_pattern.search(content))
-        print(f"Has Research Heading:{has_research_heading}")
-        if not has_research_heading:
-            return False
+    #     return bool(header_match) or body_count > 0
 
-        # Check for key research terms (case-insensitive)
-        research_terms = [
-            r"research showed",
-            r"users understood",
-            r"we found",
-            r"testing showed",
-            r"we observed",
-            r"usability tested"
-        ]
+    # @staticmethod
+    # def _has_accessibility_issues(content: str) -> bool:
+    #     header_match = ExtractComponents.accessibility_issues_header_re.search(content)
+    #     body_match = ExtractComponents.accessibility_issues_terms_re.finditer(content)
+    #     body_count = sum(1 for _ in body_match)
+    #     logger.debug(f"Has accessibility issues: {header_match} and {body_count}")
+    #     return bool(header_match) or body_count > 0
 
-        for term in research_terms:
-            if re.search(term, content, re.IGNORECASE):
-                return True
 
-        return False
-    
     def extract_from_content(
         self,
         content: str,
@@ -108,8 +116,8 @@ class ComponentsExtractor(Protocol):
         Raises:
             ValueError: If LLM response cannot be parsed
         """
-        # Check for research using rule-based method
-        has_research = ComponentsExtractor._check_has_research(self, content=content)
+        # # Check for research using rule-based method
+        # has_research = ComponentsExtractor._check_has_research(self, content=content)
 
         # Build prompt and query LLM
         prompt = self._build_extraction_prompt(content, component_url)
@@ -148,9 +156,9 @@ class ComponentsExtractor(Protocol):
             logger.debug("---------------------- JSON LLM OUTPUT ------------------------")
             logger.debug(llm_output)            
 
-            # Override has_research with our rule-based check
-            if data.get("title") :
-                data["has_research"] = has_research
+            # # Override has_research with our rule-based check
+            # if data.get("title") :
+            #     data["has_research"] = has_research
 
             # Validate and return
             return LLMComponentDataResponse(**data)

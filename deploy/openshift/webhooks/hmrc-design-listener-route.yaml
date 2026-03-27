@@ -1,0 +1,13 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: el-hmrc-design-listener
+  namespace: moj-builder
+spec:
+  to:
+    kind: Service
+    name: el-hmrc-design-listener
+    weight: 100
+  port:
+    targetPort: http-listener
+  wildcardPolicy: None

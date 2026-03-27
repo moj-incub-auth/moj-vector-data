@@ -1,0 +1,13 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: el-dwp-design-listener
+  namespace: moj-builder
+spec:
+  to:
+    kind: Service
+    name: el-dwp-design-listener
+    weight: 100
+  port:
+    targetPort: http-listener
+  wildcardPolicy: None

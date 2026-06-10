@@ -147,7 +147,7 @@ class GovUkComponentEntry:
                 ):
                     return para.strip()
 
-        return "GovUk Design System component documentation"
+        return "GOV.UK Design System component documentation"
 
     def extract_dates(self) -> tuple[str, str]:
         """Extract or generate created_at and updated_at dates."""
@@ -184,7 +184,7 @@ class GovUkComponentEntry:
         logger.info(
             f"Parsing component: {title} - has_research: {has_research} - needs_research: {needs_research} - accessibility: {accessibility}"
         )
-        parent = "GovUk Design System"
+        parent = "GOV.UK Design System"
 
         # Generate URL based on component folder name
         url = f"https://design-system.service.gov.uk/components/{self.component_path.name}/"

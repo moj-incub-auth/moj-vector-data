@@ -36,6 +36,8 @@ spec:
           value: "hap"
         - name: INFERENCE_MODEL
           value: "qwen3-14b-llm"
+        - name: MILVUS_EMBEDDING_MODEL
+          value: qwen3-embedding
         livenessProbe:
           httpGet:
             path: /health
